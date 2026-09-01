@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Numo.DevServices.Api/Numo.DevServices.Api.csproj" />
+  </Folder>
+</Solution>

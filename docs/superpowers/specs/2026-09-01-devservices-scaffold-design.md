@@ -103,15 +103,17 @@ named `<Action>Handler` with `HandleAsync(<Action>Query|Command, CancellationTok
 `NumoResult<T>` - the convention `AddNumoMediator` discovers. Controllers hold no logic beyond
 dispatching through `INumoMediator`.
 
-Routes are `api/dev-services/[controller]`, matching the `/app/dev-services` base path.
+Routes are `api/<kebab-case-plural>`. The `/app/dev-services` prefix belongs to the frontend base
+href and is stripped by the proxy, so the API host serves plain routes - what the reference's own
+comment says a standalone numo-core service should do.
 
 ### Data flow and errors
 
 Controller -> `INumoMediator.SendAsync<T>` -> FluentValidation in the pipeline -> handler ->
 `DbContext` -> `NumoResult.Ok(...)`. The global result filter turns a failed `NumoResult` into an
-RFC 7807 problem-details response and unwraps a successful one to its value. Writes commit
-through `IUnitOfWork`, which numo-core commits per operation; handlers do not call
-`SaveChangesAsync`.
+RFC 7807 problem-details response and unwraps a successful one to its value. `DevServicesDbContext`
+implements `IUnitOfWork`, and writing handlers commit through it explicitly, as the reference's
+command handlers do.
 
 ### Database
 
@@ -141,8 +143,11 @@ src/app/
 The sample page lists items in a PrimeNG table bound to a signal and creates one through a
 dialog, then reloads. Signals and `inject()`, `OnPush`, `@if`/`@for`.
 
-Dependencies: PrimeNG 21 with `@primeuix/themes`, plus `@vismaux/vud` and `@vismaux/vud-icons`
-for the Visma look. `@visma-horizon-4/ngx-common` is excluded: it is the Horizon platform
+Dependencies: PrimeNG 21 with `@primeuix/themes`, plus `@vismaux/vud` for the Visma look.
+`@vismaux/vud-icons` is left out: its stylesheet and the VUD one emit images with identical
+names, which the bundler rejects, and VUD already carries the icons. For the same reason the
+development build sets `outputHashing: "media"`, and the initial-bundle budget is raised to
+accommodate the 1.3 MB VUD stylesheet. `@visma-horizon-4/ngx-common` is excluded: it is the Horizon platform
 integration layer (auth, gateway, app shell) and cannot function with authentication off.
 
 ## Documentation

@@ -1,0 +1,9 @@
+global using AppForeach.Framework.DataType;
+global using FluentValidation;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.EntityFrameworkCore;
+global using Numo.Core;
+global using Numo.Core.Application;
+global using Numo.Core.Domain;
+global using Numo.Core.Queries;
+global using Numo.Core.Result;

@@ -1,0 +1,19 @@
+<div class="app-layout">
+  <header class="app-layout__header">
+    <span class="app-layout__title">Numo Dev Services</span>
+  </header>
+
+  <div class="app-layout__body">
+    <nav class="app-layout__nav">
+      @for (item of navigationItems; track item.route) {
+        <a [routerLink]="item.route" routerLinkActive="app-layout__nav-link--active" class="app-layout__nav-link">
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <main class="app-layout__content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
