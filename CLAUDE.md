@@ -28,6 +28,10 @@ cd src/Numo.DevServices.Api/ClientApp && npm run serve   # http://localhost:4200
 
 The dev server proxies `/app/dev-services/api/*` to the API host, so run both.
 
+In Rider the same thing is `.run/`: **Api + Frontend** is a compound that starts both and stops
+both, **Api** runs only the backend when you want to drive `ng serve` yourself, and
+**Frontend (ng serve)** is the npm script on its own.
+
 Adding a migration:
 
 ```
