@@ -1,5 +1,8 @@
 # Architecture
 
+What this app is for, and what is planned, is in `Purpose.md`. This document describes only the
+shape of what exists today.
+
 ## Shape
 
 A single ASP.NET Core project holds the whole backend. Code is organised by feature, not by

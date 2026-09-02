@@ -3,6 +3,11 @@
 .NET 10 API in vertical slices with an Angular 21 frontend. `SampleItems` is a placeholder
 slice proving the pipeline end to end - copy its shape, then delete it once real features land.
 
+A developer-only tool for browsing data the main Numo UI does not expose. **Read
+`docs/Purpose.md` first** - it holds the planned features, the standing design decisions
+(frontend calls this backend only, prefer service client libs, generic data-driven UI), and the
+open questions. Nothing real is implemented yet.
+
 ## Layout
 
 ```
