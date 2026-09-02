@@ -17,6 +17,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2"/>
+        <PackageReference Include="Numo.Common.Lib" Version="4.0.0.201"/>
         <PackageReference Include="Numo.Core.Application" Version="7.0.248"/>
         <PackageReference Include="Numo.Core.Domain" Version="7.0.248"/>
         <PackageReference Include="Numo.Core.Host.AspNetCore" Version="7.0.248"/>

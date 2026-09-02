@@ -16,6 +16,7 @@ src/Numo.DevServices.Api/          the whole backend, one project
   DevServicesModule.cs             IBusinessModule; also the assembly marker for handler discovery
   GlobalUsings.cs
   Features/<Slice>/                one folder per slice, everything it needs inside
+  Features/Services/               the registry of Numo services and their OpenAPI documents
   Persistence/                     DbContext, design-time factory, migrations
   ClientApp/                       Angular app
 ```
@@ -53,8 +54,17 @@ dotnet ef migrations add <Name> --project src/Numo.DevServices.Api --output-dir 
   `HandleAsync(<Action>Query|Command, CancellationToken)` returning `NumoResult<T>`.
   `AddNumoMediator<DevServicesModule>()` finds them by that convention - no interface, no manual
   registration. The same scan registers validators, which run in the pipeline before the handler.
+- **Every request type needs a validator**, even a rule-less `AbstractValidator<T>;`. The mediator
+  fails the request with a `FrameworkException` when it finds none, rather than skipping validation.
 - **Handlers take `DevServicesDbContext` directly.** No repository interfaces: inside a single
   project they add indirection without isolation.
+- **Reach other Numo services through their shared abstractions.** `IServiceDiscoveryService` from
+  `Numo.Common.Lib` (registered by `AddNumoCommonServices`) reads the `Services` configuration
+  section; a service's own client library is preferred over a hand-rolled HTTP client. Note that its
+  lookups throw `ServiceDoesNotExistException` instead of returning null, and that `AppId` is absent
+  from our configuration, so `GetServiceAppId` always throws.
+- **A slice registers its own infrastructure** in a `<Slice>Registration.cs` extension the module
+  calls, so an HTTP client or similar does not leak into `DevServicesModule`.
 - **Controllers only dispatch.** They take `INumoMediator`, build the request, and return
   `NumoResult<T>`; `AddNumoWebApi` unwraps a success to its value and turns a failure into an
   RFC 7807 problem-details response.
@@ -75,6 +85,9 @@ dotnet ef migrations add <Name> --project src/Numo.DevServices.Api --output-dir 
   in signals.
 - Paged endpoints need the nested query-string keys numo-core binds `PagedDataRequest` from -
   use `toPagedQueryParams`.
+- Heavy third-party UI (Swagger UI) ships as lazy `styles`/`scripts` bundles in `angular.json` with
+  `inject: false`, pulled in on demand by `ScriptLoader`/`StyleLoader`. Their URLs are relative to
+  `<base href>`, not to the current route.
 
 ## Deliberately absent
 

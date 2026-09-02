@@ -22,12 +22,14 @@
     "primeicons": "^7.0.0",
     "primeng": "^21.1.9",
     "rxjs": "~7.8.0",
+    "swagger-ui": "5.32.6",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular/build": "^21.2.19",
     "@angular/cli": "^21.2.19",
     "@angular/compiler-cli": "^21.2.0",
+    "@types/swagger-ui": "3.52.4",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",

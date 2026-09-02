@@ -38,13 +38,25 @@
             "styles": [
               "node_modules/@vismaux/vud/dist/css/vud.min.css",
               "node_modules/primeicons/primeicons.css",
-              "src/styles.scss"
+              "src/styles.scss",
+              {
+                "input": "node_modules/swagger-ui/dist/swagger-ui.css",
+                "bundleName": "swagger-ui",
+                "inject": false
+              }
             ],
             "baseHref": "/app/dev-services/",
             "outputPath": {
               "base": "dist",
               "browser": ""
-            }
+            },
+            "scripts": [
+              {
+                "input": "node_modules/swagger-ui/dist/swagger-ui-bundle.js",
+                "bundleName": "swagger-ui-bundle",
+                "inject": false
+              }
+            ]
           },
           "configurations": {
             "production": {

@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using Numo.Common.Lib.Extensions;
+using Numo.DevServices.Api.Features.Services;
 
 namespace Numo.DevServices.Api;
 
@@ -11,5 +13,10 @@ public sealed class DevServicesModule : IBusinessModule
 {
     public void ConfigureServices(IServiceCollection services)
     {
+        // Brings in IServiceDiscoveryService, which reads the "Services" section; its implementation
+        // is internal to the package, so this call is the only way to obtain it.
+        services.AddNumoCommonServices();
+
+        services.AddServicesFeature();
     }
 }

@@ -1,0 +1,26 @@
+<div class="swagger-page__toolbar">
+  <label class="swagger-page__label" for="service">Service</label>
+  <p-select
+    inputId="service"
+    [options]="services()"
+    optionLabel="name"
+    optionValue="name"
+    placeholder="Select a service"
+    [ngModel]="selectedServiceName()"
+    (ngModelChange)="onServiceSelected($event)"
+  />
+</div>
+
+@if (isLoading()) {
+  <p-progressBar mode="indeterminate" [style]="{ height: '6px' }" />
+}
+
+@if (errorMessage()) {
+  <p class="swagger-page__error">{{ errorMessage() }}</p>
+}
+
+@if (!selectedServiceName() && !errorMessage()) {
+  <p class="swagger-page__hint">Select a service to view its API documentation.</p>
+}
+
+<div #swaggerContainer></div>
