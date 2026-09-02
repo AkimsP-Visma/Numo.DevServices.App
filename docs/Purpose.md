@@ -46,6 +46,17 @@ pipeline end to end; it is not one of them.
   shape - the toggle copy-out and the Swagger host both do - but a new list of records should
   ideally be a new backend endpoint and no new frontend code.
 
+## Ideas for later
+
+- **Replace Swagger UI with our own request UI.** No embeddable OpenAPI viewer persists what you
+  type: swagger-ui, Scalar, RapiDoc and Stoplight Elements each store authorization and nothing
+  else, and none exposes an API to write values back into its fields, so saved requests are
+  impossible from the outside. Rendering the request form ourselves from the spec would let a
+  request be saved, named and replayed - in this app's database, not just the browser - and it is
+  the same generic spec-driven renderer the data-browsing feature needs. Sizeable, and only worth it
+  once retyping requests actually hurts; Insomnia covers that gap today by importing the spec from
+  `api/services/{name}/openapi`.
+
 ## Open questions
 
 - **When does the service registry move into the database?** The list currently comes from the
