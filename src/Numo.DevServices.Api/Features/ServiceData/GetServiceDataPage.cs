@@ -130,13 +130,19 @@ public sealed class GetServiceDataPageValidator : AbstractValidator<GetServiceDa
     /// <summary>
     /// The count is checked here and not in the resource so that an overlong list is a stated 400
     /// rather than a downstream request the client library silently turns into a POST search.
+    ///
+    /// An all-zero GUID is rejected for the same reason the reader discards it: the services ignore
+    /// an empty id array, so a list of nothing but zeroes would otherwise reach a service as no
+    /// filter at all and answer with the whole table. A list that splits to nothing is rejected on
+    /// the same ground.
     /// </summary>
     private static bool IsGuidListWellFormed(string value)
     {
-        var parts = value.Split(ResourceQueryFilters.ListDelimiter, StringSplitOptions.TrimEntries);
+        var parts = ResourceQueryFilters.SplitList(value);
 
-        return parts.Length <= ResourceQueryFilters.MaxListValues
-            && parts.All(part => System.Guid.TryParse(part, out _));
+        return parts.Length > 0
+            && parts.Length <= ResourceQueryFilters.MaxListValues
+            && parts.All(part => System.Guid.TryParse(part, out var id) && id != System.Guid.Empty);
     }
 }
 

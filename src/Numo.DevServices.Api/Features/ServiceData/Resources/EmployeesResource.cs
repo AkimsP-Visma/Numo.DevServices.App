@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using System.Globalization;
-using Numo.Employee.Common.QuerySupport.Ordering;
 using Numo.Employee.Lib.Clients.Employee;
 using Numo.Employee.Lib.Models;
 
@@ -126,7 +124,7 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
         {
             Page = page,
             PageSize = pageSize,
-            OrderBy = BuildOrderBy(query),
+            OrderBy = EmployeeOrderBy.From(query),
             PersonIds = restriction.PersonIds?.ToArray(),
             IncludeDeletedSince = ResourceQueryFilters.ReadIncludeDeletedSince(query, IncludeDeletedFilterKey),
         };
@@ -146,22 +144,6 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
         return employees
             .Select(employee => ToRow(employee, namesByPersonId.GetValueOrDefault(employee.PersonId)))
             .ToList();
-    }
-
-    /// <summary>An empty list is serialised as no OrderBy parameter at all, which is required: a
-    /// blank <c>OrderBy=</c> is not a syntax either service accepts.</summary>
-    private static NumoOrderByList BuildOrderBy(ResourceQuery query)
-    {
-        var orderBy = new NumoOrderByList();
-
-        if (!string.IsNullOrWhiteSpace(query.SortColumn))
-        {
-            orderBy.Add(
-                query.SortColumn,
-                query.IsSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending);
-        }
-
-        return orderBy;
     }
 
     // Cells are positional: this order is the Descriptor.Columns order. A person the lookup did not
@@ -206,14 +188,4 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
 
     private static string? Format(DateTimeOffset? value)
         => value?.ToString("O", CultureInfo.InvariantCulture);
-
-    /// <param name="PersonIds">Null when the query restricts nothing. An empty list is not the same
-    /// thing: an empty PersonIds array is ignored downstream, so it would read the whole table
-    /// instead of nothing, which is what <see cref="MatchesNobody"/> exists to prevent.</param>
-    private sealed record PersonRestriction(IReadOnlyList<Guid>? PersonIds, string? Notice)
-    {
-        public static readonly PersonRestriction None = new(PersonIds: null, Notice: null);
-
-        public bool MatchesNobody => PersonIds is { Count: 0 };
-    }
 }

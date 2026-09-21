@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using System.Globalization;
-using Numo.Employee.Common.QuerySupport.Ordering;
 using Numo.Employee.Lib.Clients.Department;
 using Numo.Employee.Lib.Clients.Employee;
 using Numo.Employee.Lib.Clients.JobTitle;
@@ -178,7 +176,7 @@ public sealed class PositionsResource(
         {
             Page = page,
             PageSize = pageSize,
-            OrderBy = BuildOrderBy(query),
+            OrderBy = EmployeeOrderBy.From(query),
             PersonIds = restriction.PersonIds?.ToArray(),
             EmployeeIds = ResourceQueryFilters.ReadGuids(query, EmployeeIdsFilterKey)?.ToArray(),
             DepartmentIds = ResourceQueryFilters.ReadGuids(query, DepartmentIdsFilterKey)?.ToArray(),
@@ -244,22 +242,6 @@ public sealed class PositionsResource(
             jobTitleId,
             $"the job title of a {ResourceKey} record");
 
-    /// <summary>An empty list is serialised as no OrderBy parameter at all, which is required: a
-    /// blank <c>OrderBy=</c> is not a syntax either service accepts.</summary>
-    private static NumoOrderByList BuildOrderBy(ResourceQuery query)
-    {
-        var orderBy = new NumoOrderByList();
-
-        if (!string.IsNullOrWhiteSpace(query.SortColumn))
-        {
-            orderBy.Add(
-                query.SortColumn,
-                query.IsSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending);
-        }
-
-        return orderBy;
-    }
-
     // Cells are positional: this order is the Descriptor.Columns order.
     private static ResourceRow ToRow(PositionDto position, PositionRelations related)
         => new(
@@ -273,7 +255,7 @@ public sealed class PositionsResource(
                 new Cell(position.Code, Link: null),
                 new Cell(Format(position.ActiveFrom), Link: null),
                 new Cell(Format(position.ActiveTo), Link: null),
-                new Cell(Format(position.Workload), Link: null),
+                new Cell(FormatNumber(position.Workload), Link: null),
                 new Cell(Format(position.Primary), Link: null),
                 new Cell(Format(position.Schedule), Link: null),
                 new Cell(Format(position.PayType), Link: null),
@@ -308,7 +290,7 @@ public sealed class PositionsResource(
                 new FieldValue("Code", position.Code, FieldKind.Text, Link: null),
                 new FieldValue("Active from", Format(position.ActiveFrom), FieldKind.Date, Link: null),
                 new FieldValue("Active to", Format(position.ActiveTo), FieldKind.Date, Link: null),
-                new FieldValue("Workload", Format(position.Workload), FieldKind.Number, Link: null),
+                new FieldValue("Workload", FormatNumber(position.Workload), FieldKind.Number, Link: null),
                 new FieldValue("Primary", Format(position.Primary), FieldKind.Boolean, Link: null),
                 new FieldValue("Use plan", Format(position.UsePlan), FieldKind.Boolean, Link: null),
                 new FieldValue("Schedule", Format(position.Schedule), FieldKind.Enum, Link: null),
@@ -318,9 +300,14 @@ public sealed class PositionsResource(
                     position.LegalRelationId?.ToString(),
                     FieldKind.Guid,
                     Link: null),
-                // Not another position's id: probed, /api/positions/{positionId} answers "not found"
-                // for every value seen in this tenant, so it carries no link.
-                new FieldValue("Position id", position.PositionId?.ToString(), FieldKind.Guid, Link: null),
+                // Not another position's id, whatever the DTO calls it: probed,
+                // /api/positions/{positionId} answers "not found" for every value seen in this
+                // tenant, so the label says nothing it cannot back up and there is no link.
+                new FieldValue(
+                    "External position id",
+                    position.PositionId?.ToString(),
+                    FieldKind.Guid,
+                    Link: null),
                 new FieldValue("Deleted at", Format(position.DeletedAt), FieldKind.DateTime, Link: null),
             ],
             []);
@@ -372,16 +359,29 @@ public sealed class PositionsResource(
     private static string? Format(DateOnly? value)
         => value is null ? null : Format(value.Value);
 
-    private static string Format(float value)
+    /// <summary>Deliberately not called Format: an int widens to float implicitly, so a Format
+    /// overload taking one would swallow an enum property a future library version retyped as an
+    /// integer and render the number. Named apart, that case stops compiling.</summary>
+    private static string FormatNumber(float value)
         => value.ToString(CultureInfo.InvariantCulture);
 
     private static string? Format(DateTimeOffset? value)
         => value?.ToString("O", CultureInfo.InvariantCulture);
 
-    /// <summary>The enums cross the wire as integers and the DTO types them as enums, so this renders
-    /// a name rather than a number without a lookup table of our own.</summary>
-    private static string? Format(Enum? value)
-        => value?.ToString();
+    /// <summary>
+    /// The enums cross the wire as integers and the DTO types them as enums, so this renders a name
+    /// rather than a number without a lookup table of our own. Constrained to an enum on purpose:
+    /// were a future library version to retype one of these properties as an int, it would bind to
+    /// a numeric overload instead and the column would silently go back to showing a number. Between
+    /// this constraint and FormatNumber's name, that case stops compiling.
+    /// </summary>
+    private static string Format<T>(T value)
+        where T : struct, Enum
+        => value.ToString();
+
+    private static string? Format<T>(T? value)
+        where T : struct, Enum
+        => value is null ? null : Format(value.Value);
 
     /// <param name="Employee">Null when the service did not return it, which a soft-deleted or
     /// removed related record makes possible. Every consumer below treats that as a missing label
@@ -391,14 +391,4 @@ public sealed class PositionsResource(
         string? PersonName,
         DepartmentDto? Department,
         JobTitleDto? JobTitle);
-
-    /// <param name="PersonIds">Null when the query restricts nothing. An empty list is not the same
-    /// thing: an empty PersonIds array is ignored downstream, so it would read the whole table
-    /// instead of nothing, which is what <see cref="MatchesNobody"/> exists to prevent.</param>
-    private sealed record PersonRestriction(IReadOnlyList<Guid>? PersonIds, string? Notice)
-    {
-        public static readonly PersonRestriction None = new(PersonIds: null, Notice: null);
-
-        public bool MatchesNobody => PersonIds is { Count: 0 };
-    }
 }

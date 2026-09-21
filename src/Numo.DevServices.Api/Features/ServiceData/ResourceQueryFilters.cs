@@ -49,9 +49,20 @@ internal static class ResourceQueryFilters
                 : null;
 
     /// <summary>
+    /// How a list-valued filter's value divides into values, used by both the page validator and the
+    /// readers below so that the elements a cap is counted against are the elements a resource
+    /// actually sends. A trailing delimiter is therefore not a failure, and an empty element is not
+    /// counted.
+    /// </summary>
+    public static string[] SplitList(string value)
+        => value.Split(ListDelimiter, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    /// <summary>
     /// The values of a list-valued filter. Null rather than an empty list when the caller asked for
     /// nothing, because the downstream services ignore an empty id array and would answer a request
-    /// carrying one with the whole table.
+    /// carrying one with the whole table. The page validator rejects an unusable value before this
+    /// runs, including an all-zero GUID, so that a discarded value can never reach a service as a
+    /// missing filter.
     /// </summary>
     public static IReadOnlyList<Guid>? ReadGuids(ResourceQuery query, string key)
     {
@@ -60,8 +71,7 @@ internal static class ResourceQueryFilters
             return null;
         }
 
-        var ids = value
-            .Split(ListDelimiter, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+        var ids = SplitList(value)
             .Select(part => Guid.TryParse(part, out var id) ? id : Guid.Empty)
             .Where(id => id != Guid.Empty)
             .Distinct()
