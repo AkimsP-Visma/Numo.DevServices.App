@@ -18,6 +18,7 @@ src/Numo.DevServices.Api/          the whole backend, one project
   Features/<Slice>/                one folder per slice, everything it needs inside
   Features/Services/               the registry of Numo services and their OpenAPI documents
   Features/FeatureFlags/           the LaunchDarkly toggle list, read over the LaunchDarkly REST API
+  Features/ServiceHealth/          the ping dashboard over the same configured services
   Persistence/                     DbContext, design-time factory, migrations
   ClientApp/                       Angular app
 ```

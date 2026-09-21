@@ -16,6 +16,7 @@ interface NavigationItem {
 export class AppLayout {
   protected readonly navigationItems: readonly NavigationItem[] = [
     { label: 'Swagger', route: '/swagger' },
+    { label: 'Service status', route: '/service-health' },
     { label: 'Feature toggles', route: '/feature-flags' },
     { label: 'Sample items', route: '/sample-items' },
   ];

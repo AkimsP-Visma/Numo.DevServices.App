@@ -18,9 +18,12 @@ service win over anything else.
    copy-out format is the point of the feature, not a nicety. *Listing is built* -
    `Features/FeatureFlags/` plus the `/feature-flags` page; the copy-out is not.
 3. **Service data browsing.** Lists of records, and a single-record view for a chosen row.
+4. **Service status dashboard.** Whether every service under the `Services` configuration section
+   answers its ping endpoint, refreshed while the page is open. *Built* - `Features/ServiceHealth/`
+   plus the `/service-health` page.
 
-Feature 1 is built, 2 in part, 3 not at all. `Features/SampleItems/` is scaffolding that proves the
-pipeline end to end; it is not one of them.
+Features 1 and 4 are built, 2 in part, 3 not at all. `Features/SampleItems/` is scaffolding that
+proves the pipeline end to end; it is not one of them.
 
 ## Design decisions
 
@@ -58,6 +61,12 @@ pipeline end to end; it is not one of them.
   Note also that `AddNumoCommonServices` does not register `ILdClient`: it builds its own inside a
   private factory, and resolving `IFeatureFlagService` with `Provider: LaunchDarkly` additionally
   needs an `IDistributedCache` that nothing here registers.
+- **Every Numo service answers `api/platform/microservice/ping` with `pong`.** The path is the same
+  under every service's configured location, so the status dashboard needs no per-service knowledge
+  beyond that location. Up means HTTP 200 *and* a `pong` body: a gateway that is up while the
+  service behind it is not still answers 200, with a page of its own, so the status code alone would
+  read as healthy. One service being down is data rather than a failure, so the endpoint answers 200
+  with a row per service either way.
 - **Listing flags takes two calls, because per-environment state is opt-in.**
   `GET /api/v2/flags/{projectKey}` omits the `environments` object entirely unless every wanted
   environment is named in a repeated `env` parameter, so the project's environments are read from

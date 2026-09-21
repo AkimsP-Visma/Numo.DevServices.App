@@ -1,0 +1,71 @@
+.service-health-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  &__subtitle {
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--p-text-muted-color, #6c757d);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: 1rem;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--p-content-border-color, #dee2e6);
+    border-radius: 0.5rem;
+    border-left-width: 4px;
+
+    &--up {
+      border-left-color: var(--p-green-500, #22c55e);
+    }
+
+    &--down {
+      border-left-color: var(--p-red-500, #ef4444);
+    }
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  &__name {
+    font-weight: 600;
+    word-break: break-word;
+  }
+
+  &__location {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--p-text-muted-color, #6c757d);
+    word-break: break-all;
+  }
+
+  &__detail {
+    font-size: 0.85rem;
+    word-break: break-word;
+  }
+}

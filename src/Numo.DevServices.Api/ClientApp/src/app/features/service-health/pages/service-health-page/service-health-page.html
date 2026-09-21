@@ -1,0 +1,55 @@
+<div class="service-health-page">
+  <div class="service-health-page__header">
+    <div>
+      <h1 class="service-health-page__title">Service status</h1>
+
+      <div class="service-health-page__subtitle">
+        @if (checkedAt(); as checked) {
+          {{ upCount() }} up, {{ downCount() }} down - checked {{ checked | date: 'HH:mm:ss' }},
+          refreshes every minute
+        } @else {
+          Pinging every configured service...
+        }
+      </div>
+    </div>
+
+    <p-button label="Refresh" severity="secondary" [disabled]="isLoading()" (onClick)="load()" />
+  </div>
+
+  @if (errorMessage(); as message) {
+    <p-message severity="error" [text]="message" />
+  }
+
+  <div class="service-health-page__grid">
+    @for (service of services(); track service.name) {
+      <div
+        class="service-health-page__card"
+        [class.service-health-page__card--up]="service.isUp"
+        [class.service-health-page__card--down]="!service.isUp"
+      >
+        <div class="service-health-page__card-head">
+          <span class="service-health-page__name">{{ service.name }}</span>
+
+          <p-tag
+            [value]="service.isUp ? 'Up' : 'Down'"
+            [severity]="service.isUp ? 'success' : 'danger'"
+          />
+        </div>
+
+        <div class="service-health-page__location">{{ service.location }}</div>
+
+        <div class="service-health-page__detail">
+          @if (service.isUp) {
+            Answered pong in {{ service.responseTimeMs }} ms
+          } @else {
+            {{ service.downReason }}
+          }
+        </div>
+      </div>
+    } @empty {
+      @if (!isLoading()) {
+        <p-message severity="info" text="No services are configured in the Services section." />
+      }
+    }
+  </div>
+</div>

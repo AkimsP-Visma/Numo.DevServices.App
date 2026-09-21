@@ -7,6 +7,11 @@ export const routes: Routes = [
     loadChildren: () => import('./features/services/services.routes').then((m) => m.servicesRoutes),
   },
   {
+    path: 'service-health',
+    loadChildren: () =>
+      import('./features/service-health/service-health.routes').then((m) => m.serviceHealthRoutes),
+  },
+  {
     path: 'feature-flags',
     loadChildren: () =>
       import('./features/feature-flags/feature-flags.routes').then((m) => m.featureFlagsRoutes),
