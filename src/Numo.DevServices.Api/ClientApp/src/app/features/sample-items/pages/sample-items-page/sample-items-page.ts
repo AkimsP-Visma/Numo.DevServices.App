@@ -10,6 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SampleItemsApiService } from '../../api/sample-items-api.service';
 import { SampleItem } from '../../api/sample-item.model';
 import { PagedRequest } from '../../../../shared/api/paginated-list.model';
+import { readProblemDetail } from '../../../../shared/api/problem-details';
 
 const NAME_MAX_LENGTH = 56;
 const DESCRIPTION_MAX_LENGTH = 2000;
@@ -97,9 +98,4 @@ export class SampleItemsPage {
       },
     });
   }
-}
-
-// The API reports failures as RFC 7807 problem details produced by the NumoResult filter.
-function readProblemDetail(error: HttpErrorResponse): string {
-  return error.error?.detail ?? error.error?.title ?? error.message;
 }

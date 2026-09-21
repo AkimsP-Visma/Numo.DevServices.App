@@ -1,0 +1,66 @@
+<div class="feature-flags-page">
+  <div class="feature-flags-page__header">
+    <h1 class="feature-flags-page__title">Feature toggles</h1>
+
+    <p-button label="Reload" severity="secondary" [disabled]="isLoading()" (onClick)="load()" />
+  </div>
+
+  @if (errorMessage(); as message) {
+    <p-message severity="error" [text]="message" />
+  }
+
+  <p-table
+    [value]="flags()"
+    [loading]="isLoading()"
+    dataKey="key"
+    styleClass="p-datatable-sm"
+    [scrollable]="true"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Flag</th>
+        <th>Tags</th>
+        @for (environmentKey of environmentKeys(); track environmentKey) {
+          <th>{{ environmentKey }}</th>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-flag>
+      <tr>
+        <td>
+          <div class="feature-flags-page__name">{{ flag.name }}</div>
+          <div class="feature-flags-page__key">{{ flag.key }}</div>
+        </td>
+
+        <td>
+          @for (tag of flag.tags; track tag) {
+            <p-tag [value]="tag" severity="info" styleClass="feature-flags-page__tag" />
+          } @empty {
+            {{ '-' }}
+          }
+        </td>
+
+        @for (environmentKey of environmentKeys(); track environmentKey) {
+          <td>
+            @if (flag.environments[environmentKey]; as state) {
+              <p-tag
+                [value]="state.isOn ? 'On' : 'Off'"
+                [severity]="state.isOn ? 'success' : 'secondary'"
+              />
+              <div class="feature-flags-page__value">{{ describeValue(state) }}</div>
+            } @else {
+              {{ '-' }}
+            }
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="columnCount()">No feature toggles to show.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

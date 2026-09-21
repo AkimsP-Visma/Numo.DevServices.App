@@ -15,10 +15,11 @@ service win over anything else.
    `/swagger` URL. *Built* - `Features/Services/` plus the `/swagger` page.
 2. **LaunchDarkly feature-toggle browser.** List the current toggles and their values, and copy
    a selection as JSON shaped for pasting into a local `appsettings.Development.json`. The
-   copy-out format is the point of the feature, not a nicety.
+   copy-out format is the point of the feature, not a nicety. *Listing is built* -
+   `Features/FeatureFlags/` plus the `/feature-flags` page; the copy-out is not.
 3. **Service data browsing.** Lists of records, and a single-record view for a chosen row.
 
-Feature 1 is built; 2 and 3 are not. `Features/SampleItems/` is scaffolding that proves the
+Feature 1 is built, 2 in part, 3 not at all. `Features/SampleItems/` is scaffolding that proves the
 pipeline end to end; it is not one of them.
 
 ## Design decisions
@@ -46,6 +47,26 @@ pipeline end to end; it is not one of them.
   shape - the toggle copy-out and the Swagger host both do - but a new list of records should
   ideally be a new backend endpoint and no new frontend code.
 
+## Standing constraints
+
+- **The LaunchDarkly SDK cannot list toggles, and this is why the toggle page uses the REST API.**
+  `IFeatureFlagService` from `Numo.Common.Lib` only answers `IsEnabledAsync(name)` for a flag you
+  already know, and the server SDK underneath it only evaluates a named flag against a context -
+  `AllFlagsState` yields flag keys and values, never names, descriptions or tags, because those are
+  project metadata that LaunchDarkly does not send to SDKs at all. So the flag list comes from
+  `GET /api/v2/flags/{projectKey}`, which needs an API access token rather than the SDK key.
+  Note also that `AddNumoCommonServices` does not register `ILdClient`: it builds its own inside a
+  private factory, and resolving `IFeatureFlagService` with `Provider: LaunchDarkly` additionally
+  needs an `IDistributedCache` that nothing here registers.
+- **Listing flags takes two calls, because per-environment state is opt-in.**
+  `GET /api/v2/flags/{projectKey}` omits the `environments` object entirely unless every wanted
+  environment is named in a repeated `env` parameter, so the project's environments are read from
+  `GET /api/v2/projects/{projectKey}/environments` first. In the default summary representation an
+  environment then carries `on` and a `_summary` marking which variation index is the fallthrough
+  and which is the off one - that is where the served value comes from. The plain `fallthrough` and
+  `offVariation` fields appear only under `summary=0`, which also returns every targeting rule, so
+  the summary is both the smaller and the sufficient answer.
+
 ## Ideas for later
 
 - **Replace Swagger UI with our own request UI.** No embeddable OpenAPI viewer persists what you
@@ -64,9 +85,6 @@ pipeline end to end; it is not one of them.
   next step is storing it in this app's database and editing it through the UI, which is what the
   scaffolded EF Core setup is for. The swap is a second implementation of that same interface plus
   a registration change - handlers do not know where the list came from.
-- **`Numo.Common.Lib` also brings `IFeatureFlagService` and Microsoft.FeatureManagement**, already
-  registered by `AddNumoCommonServices`. Worth looking at first when starting the LaunchDarkly
-  feature rather than adding another SDK.
 - **What does "generic components from JSON" mean concretely?** A column-inferring table over
   arbitrary JSON is very different from a backend that returns an explicit display descriptor
   (columns, labels, formats) alongside the rows. The second keeps the frontend dumber and is

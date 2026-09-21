@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Numo.Common.Lib.Extensions;
+using Numo.DevServices.Api.Features.FeatureFlags;
 using Numo.DevServices.Api.Features.Services;
 
 namespace Numo.DevServices.Api;
@@ -18,5 +19,6 @@ public sealed class DevServicesModule : IBusinessModule
         services.AddNumoCommonServices();
 
         services.AddServicesFeature();
+        services.AddFeatureFlagsFeature();
     }
 }

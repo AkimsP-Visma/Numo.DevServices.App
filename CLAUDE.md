@@ -17,6 +17,7 @@ src/Numo.DevServices.Api/          the whole backend, one project
   GlobalUsings.cs
   Features/<Slice>/                one folder per slice, everything it needs inside
   Features/Services/               the registry of Numo services and their OpenAPI documents
+  Features/FeatureFlags/           the LaunchDarkly toggle list, read over the LaunchDarkly REST API
   Persistence/                     DbContext, design-time factory, migrations
   ClientApp/                       Angular app
 ```
@@ -65,6 +66,18 @@ dotnet ef migrations add <Name> --project src/Numo.DevServices.Api --output-dir 
   from our configuration, so `GetServiceAppId` always throws.
 - **A slice registers its own infrastructure** in a `<Slice>Registration.cs` extension the module
   calls, so an HTTP client or similar does not leak into `DevServicesModule`.
+- **Register the module exactly once.** `AddNumoWebApi<DevServicesModule>()` already calls
+  `AddNumo<DevServicesModule>()` internally, and `AddNumo` appends its `ModuleFeatureOption` with
+  `AddSingleton`, so doing both makes numo-core construct the module twice and run
+  `ConfigureServices` on both instances against the same collection - every `AddXFeature()` and
+  everything inside it then happens twice. The template gets away with calling both because it
+  passes a *different* module to each; a single-module service like this one must not. Prefer
+  assignment over accumulation in a `ConfigureHttpClient` action anyway
+  (`DefaultRequestHeaders.Authorization =`, not `TryAddWithoutValidation`), so a stray second
+  registration degrades into a no-op instead of a duplicated header the remote end rejects.
+- Two `PostgreSqlMigrationStartup` lines at startup are **not** a duplicate: they are the
+  `DevServicesDbContext` and framework `FrameworkDbContext` tasks, and the log omits the generic
+  argument that tells them apart.
 - **Controllers only dispatch.** They take `INumoMediator`, build the request, and return
   `NumoResult<T>`; `AddNumoWebApi` unwraps a success to its value and turns a failure into an
   RFC 7807 problem-details response.

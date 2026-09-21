@@ -1,0 +1,37 @@
+.feature-flags-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  &__name {
+    font-weight: 600;
+  }
+
+  &__key {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--p-text-muted-color, #6c757d);
+  }
+
+  &__value {
+    margin-top: 0.25rem;
+    font-family: monospace;
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
+
+  &__tag {
+    margin: 0 0.25rem 0.25rem 0;
+  }
+}
