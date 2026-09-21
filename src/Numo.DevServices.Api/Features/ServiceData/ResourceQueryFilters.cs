@@ -42,6 +42,17 @@ internal static class ResourceQueryFilters
     public static Guid? ReadGuid(ResourceQuery query, string key)
         => query.Filters.TryGetValue(key, out var value) && Guid.TryParse(value, out var parsed) ? parsed : null;
 
+    /// <summary>
+    /// An enum filter's value, matched against the names the resource published as the filter's
+    /// Options. Case-insensitive because a query string is typed by hand as often as it is clicked.
+    /// </summary>
+    public static T? ReadEnum<T>(ResourceQuery query, string key)
+        where T : struct, Enum
+        => query.Filters.TryGetValue(key, out var value)
+            && Enum.TryParse<T>(value, ignoreCase: true, out var parsed)
+                ? parsed
+                : null;
+
     public static DateOnly? ReadDate(ResourceQuery query, string key)
         => query.Filters.TryGetValue(key, out var value)
             && DateOnly.TryParse(value, CultureInfo.InvariantCulture, out var parsed)
