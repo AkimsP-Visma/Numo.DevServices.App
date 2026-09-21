@@ -22,6 +22,11 @@
         <PackageReference Include="Numo.Core.Domain" Version="7.0.248"/>
         <PackageReference Include="Numo.Core.Host.AspNetCore" Version="7.0.248"/>
         <PackageReference Include="Numo.Core.Infrastructure" Version="7.0.248"/>
+        <!-- Numo.Common.Microservice.Lib is deliberately not referenced: it demands
+             Numo.Common.Lib >= 4.0.0.205 against the 4.0.0.201 pinned above and breaks restore with
+             NU1605. Its tenant types arrive transitively through these two. -->
+        <PackageReference Include="Numo.Employee.Lib" Version="5.0.0.241"/>
+        <PackageReference Include="Numo.Person.Lib" Version="3.0.0.242"/>
     </ItemGroup>
 
     <ItemGroup>
