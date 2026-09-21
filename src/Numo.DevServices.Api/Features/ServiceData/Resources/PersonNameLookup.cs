@@ -3,28 +3,30 @@ using Numo.Person.Lib.Models;
 
 namespace Numo.DevServices.Api.Features.ServiceData.Resources;
 
-/// <summary>What a person search found, and whether the cap cut it short.</summary>
+/// <summary>What a person search found, and whether the caller's cap cut it short.</summary>
 public sealed record PersonIdSearch(IReadOnlyList<Guid> PersonIds, bool IsTruncated);
 
 /// <summary>
-/// The two person lookups the Employee service cannot answer itself: it holds no name field at all,
-/// so its rows are columns of GUIDs without the first, and it cannot search by name at all without
-/// the second. Both live here because the employees and positions resources each need both.
+/// The two person lookups the employee-side services cannot answer themselves: they hold no name
+/// field at all, so their rows are columns of GUIDs without the first, and they cannot search a name
+/// at all without the second. Both live here because the employees and positions resources need both.
+///
+/// Every call is a GET, which is a real constraint rather than a preference: BaseClient switches to
+/// POST {endpoint}/search above 1000 characters of query string, and one of the routes this seam
+/// feeds has no search variant. The two numbers below are therefore query-string budgets, and they
+/// are deliberately separate because they are spent in different requests.
 /// </summary>
 public sealed class PersonNameLookup(IPersonClient personClient)
 {
     /// <summary>
-    /// The most person ids one call may carry. BaseClient switches to POST {endpoint}/search above
-    /// 1000 characters of query string and this slice is GET-only; a repeated PersonIds GUID costs 46
-    /// of those characters, and 20 of them plus the paging and soft-delete parameters measure 989.
+    /// How many ids one id-to-name call may carry. Budget: a persons GET carrying nothing but
+    /// PersonIds, paging and IncludeDeletedSince, measured at 989 characters for 20 ids. Private
+    /// because it says nothing about any other request; a repeated PersonIds GUID costs 47 characters
+    /// wherever it is spent, but what else shares the query string is the caller's business.
     /// </summary>
-    public const int MaxIdsPerCall = 20;
+    private const int MaxIdsPerCall = 20;
 
     private const int FirstPage = 1;
-
-    /// <summary>The Person service excludes soft-deleted people unless told how far back to include
-    /// them, so including them means a date old enough to cover every row rather than a flag.</summary>
-    private static readonly DateOnly IncludeDeletedSince = new(1900, 1, 1);
 
     /// <summary>
     /// Display names for a whole page of rows: one call per <see cref="MaxIdsPerCall"/> distinct ids
@@ -45,7 +47,7 @@ public sealed class PersonNameLookup(IPersonClient personClient)
                 Page = FirstPage,
                 PageSize = chunk.Length,
                 PersonIds = chunk,
-                IncludeDeletedSince = IncludeDeletedSince,
+                IncludeDeletedSince = ResourceQueryFilters.IncludeDeletedSince,
             };
 
             var persons = await DownstreamCall.InvokeAsync(
@@ -71,14 +73,29 @@ public sealed class PersonNameLookup(IPersonClient personClient)
     /// cannot search a name, so a name fragment is resolved to person ids here and the ids feed the
     /// resource's own PersonIds filter. One id more than the cap is asked for, so truncation is a
     /// fact the caller can report rather than a guess.
+    ///
+    /// Soft-deleted people are included, matching <see cref="GetNamesByPersonIdAsync"/>: whether a
+    /// person is deleted says nothing about whether the rows referencing them are, and the calling
+    /// resource has its own includeDeleted filter for that question.
     /// </summary>
-    public async Task<PersonIdSearch> FindPersonIdsByNameAsync(string nameFragment)
+    /// <param name="narrowToPersonId">A person the caller already restricts to. Passed downstream
+    /// alongside the name so the two narrow each other exactly, instead of the caller intersecting a
+    /// list the cap may already have truncated.</param>
+    /// <param name="maxIds">How many ids the caller can afford to spend. There is no default: the ids
+    /// are spent inside a different service's filter, whose other parameters only the caller knows,
+    /// and a shared number would silently overflow the widest of them.</param>
+    public async Task<PersonIdSearch> FindPersonIdsByNameAsync(
+        string nameFragment,
+        Guid? narrowToPersonId,
+        int maxIds)
     {
         var filter = new PersonFilter
         {
             Page = FirstPage,
-            PageSize = MaxIdsPerCall + 1,
+            PageSize = maxIds + 1,
             FullNamePart = nameFragment,
+            PersonIds = narrowToPersonId is null ? [] : [narrowToPersonId.Value],
+            IncludeDeletedSince = ResourceQueryFilters.IncludeDeletedSince,
         };
 
         var persons = await DownstreamCall.InvokeAsync(
@@ -87,8 +104,8 @@ public sealed class PersonNameLookup(IPersonClient personClient)
 
         var personIds = persons.Select(person => person.Id).Distinct().ToList();
 
-        return personIds.Count > MaxIdsPerCall
-            ? new PersonIdSearch(personIds.Take(MaxIdsPerCall).ToList(), IsTruncated: true)
+        return personIds.Count > maxIds
+            ? new PersonIdSearch(personIds.Take(maxIds).ToList(), IsTruncated: true)
             : new PersonIdSearch(personIds, IsTruncated: false);
     }
 

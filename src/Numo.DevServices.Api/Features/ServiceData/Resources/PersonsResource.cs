@@ -21,12 +21,6 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
     private const string IsActiveFilterKey = "isActive";
     private const string IncludeDeletedFilterKey = "includeDeleted";
 
-    /// <summary>
-    /// The Person service excludes soft-deleted rows unless told how far back to include them, so
-    /// including them means a date old enough to cover every row rather than a flag.
-    /// </summary>
-    private static readonly DateOnly IncludeDeletedSince = new(1900, 1, 1);
-
     // Sortability is per column and was established by probe: the service silently ignores an order
     // on any other column, which would show as a sort that does nothing.
     public ResourceDescriptor Descriptor { get; } = new(
@@ -72,12 +66,10 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
             Page = page,
             PageSize = pageSize,
             OrderBy = BuildOrderBy(query),
-            FullNamePart = TextFilter(query, FullNamePartFilterKey),
-            Email = TextFilter(query, EmailFilterKey),
-            IsActive = BooleanFilter(query, IsActiveFilterKey),
-            IncludeDeletedSince = BooleanFilter(query, IncludeDeletedFilterKey) is true
-                ? IncludeDeletedSince
-                : null,
+            FullNamePart = ResourceQueryFilters.ReadText(query, FullNamePartFilterKey),
+            Email = ResourceQueryFilters.ReadText(query, EmailFilterKey),
+            IsActive = ResourceQueryFilters.ReadBoolean(query, IsActiveFilterKey),
+            IncludeDeletedSince = ResourceQueryFilters.ReadIncludeDeletedSince(query, IncludeDeletedFilterKey),
         };
 
         return DownstreamCall.InvokeAsync(
@@ -100,12 +92,6 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
 
         return orderBy;
     }
-
-    private static string? TextFilter(ResourceQuery query, string key)
-        => query.Filters.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
-
-    private static bool? BooleanFilter(ResourceQuery query, string key)
-        => query.Filters.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed) ? parsed : null;
 
     // Cells are positional: this order is the Descriptor.Columns order.
     private static ResourceRow ToRow(PersonDto person)

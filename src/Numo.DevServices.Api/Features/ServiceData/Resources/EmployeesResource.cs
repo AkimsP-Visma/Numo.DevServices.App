@@ -23,9 +23,14 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
     private const string PersonIdFilterKey = "personId";
     private const string IncludeDeletedFilterKey = "includeDeleted";
 
-    /// <summary>The Employee service excludes soft-deleted rows unless told how far back to include
-    /// them, so including them means a date old enough to cover every row rather than a flag.</summary>
-    private static readonly DateOnly IncludeDeletedSince = new(1900, 1, 1);
+    /// <summary>
+    /// How many person ids the personName pre-search may return. Budget: an employees GET carrying
+    /// these ids plus paging, OrderBy and IncludeDeletedSince, measured at 911 characters for 18 ids
+    /// against the 1000 at which the client would fall back to a POST search. It is this resource's
+    /// number and not the lookup's, because the other parameters sharing the query string are this
+    /// resource's own.
+    /// </summary>
+    private const int MaxPreSearchIds = 18;
 
     // Sortability is per column and was established by probe: the service silently ignores an order
     // on id, personId and deletedAt, which would show as a sort that does nothing. personName is not
@@ -83,8 +88,8 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
     /// </summary>
     private async Task<PersonRestriction> ResolvePersonRestrictionAsync(ResourceQuery query)
     {
-        var personId = GuidFilter(query, PersonIdFilterKey);
-        var nameFragment = TextFilter(query, PersonNameFilterKey);
+        var personId = ResourceQueryFilters.ReadGuid(query, PersonIdFilterKey);
+        var nameFragment = ResourceQueryFilters.ReadText(query, PersonNameFilterKey);
 
         if (nameFragment is null)
         {
@@ -93,18 +98,17 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
                 : new PersonRestriction([personId.Value], Notice: null);
         }
 
-        var search = await personNameLookup.FindPersonIdsByNameAsync(nameFragment);
+        // Both filters go into the one pre-search rather than being intersected here: intersecting
+        // locally against a capped list would report nobody whenever the named person fell outside
+        // the first page of matches.
+        var search = await personNameLookup.FindPersonIdsByNameAsync(nameFragment, personId, MaxPreSearchIds);
 
-        var personIds = personId is null
-            ? search.PersonIds
-            : search.PersonIds.Where(id => id == personId.Value).ToList();
-
-        return new PersonRestriction(personIds, search.IsTruncated ? TruncatedNotice() : null);
+        return new PersonRestriction(search.PersonIds, search.IsTruncated ? TruncatedNotice() : null);
     }
 
     private static string TruncatedNotice()
-        => $"More than {PersonNameLookup.MaxIdsPerCall} people match that name. "
-            + $"Showing the employees of the first {PersonNameLookup.MaxIdsPerCall} only.";
+        => $"More than {MaxPreSearchIds} people match that name. "
+            + $"Showing the employees of the first {MaxPreSearchIds} only.";
 
     private Task<IEnumerable<EmployeeDto>> FetchPageAsync(
         ResourceQuery query,
@@ -124,9 +128,7 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
             PageSize = pageSize,
             OrderBy = BuildOrderBy(query),
             PersonIds = restriction.PersonIds?.ToArray(),
-            IncludeDeletedSince = BooleanFilter(query, IncludeDeletedFilterKey) is true
-                ? IncludeDeletedSince
-                : null,
+            IncludeDeletedSince = ResourceQueryFilters.ReadIncludeDeletedSince(query, IncludeDeletedFilterKey),
         };
 
         return DownstreamCall.InvokeResultAsync(
@@ -161,15 +163,6 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
 
         return orderBy;
     }
-
-    private static string? TextFilter(ResourceQuery query, string key)
-        => query.Filters.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value : null;
-
-    private static bool? BooleanFilter(ResourceQuery query, string key)
-        => query.Filters.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed) ? parsed : null;
-
-    private static Guid? GuidFilter(ResourceQuery query, string key)
-        => query.Filters.TryGetValue(key, out var value) && Guid.TryParse(value, out var parsed) ? parsed : null;
 
     // Cells are positional: this order is the Descriptor.Columns order. A person the lookup did not
     // return leaves the name cell empty rather than carrying invented text, and the person id cell
