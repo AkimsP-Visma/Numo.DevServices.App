@@ -28,6 +28,11 @@ internal static class ServiceDataRegistration
         // supply the tenant id, and it is scoped because the value belongs to one request.
         services.AddNumoTenantSetter(ServiceLifetime.Scoped);
 
+        // The catalogue's resources are not registered here: numo-core's convention scan over this
+        // assembly already registers every class against the interfaces it implements, so an
+        // explicit IServiceDataResource registration makes the catalogue see the same resource twice.
+        services.AddScoped<ServiceDataCatalogue>();
+
         return services;
     }
 }
