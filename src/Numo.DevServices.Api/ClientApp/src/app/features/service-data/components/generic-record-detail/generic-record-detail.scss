@@ -1,0 +1,31 @@
+.generic-record-detail {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1.5rem;
+
+  &__label {
+    font-weight: 600;
+  }
+
+  &__value {
+    margin: 0;
+
+    &--id {
+      font-family: monospace;
+    }
+  }
+
+  &__relations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__relation {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 4px;
+    text-decoration: none;
+  }
+}

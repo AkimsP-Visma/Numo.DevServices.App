@@ -1,0 +1,17 @@
+<div class="tenant-id-field">
+  <label class="tenant-id-field__label" for="tenant-id">Tenant id</label>
+
+  <input
+    id="tenant-id"
+    class="tenant-id-field__input"
+    type="text"
+    placeholder="00000000-0000-0000-0000-000000000000"
+    spellcheck="false"
+    [value]="tenantId()"
+    (change)="apply($any($event.target).value)"
+  />
+
+  @if (tenantId()) {
+    <p-button label="Clear" severity="secondary" [text]="true" (onClick)="clear()" />
+  }
+</div>

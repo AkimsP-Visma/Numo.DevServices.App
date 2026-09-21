@@ -1,0 +1,76 @@
+@if (filters().length) {
+  <form class="resource-filter-bar" (ngSubmit)="apply()">
+    @for (filter of filters(); track filter.key) {
+      <div class="resource-filter-bar__field">
+        <label class="resource-filter-bar__label" [attr.for]="'filter-' + filter.key">
+          {{ filter.label }}
+        </label>
+
+        @switch (filter.kind) {
+          @case ('Boolean') {
+            <select
+              [attr.id]="'filter-' + filter.key"
+              [value]="valueOf(filter.key)"
+              (change)="setValue(filter.key, $any($event.target).value)"
+            >
+              <option value="">Any</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          }
+          @case ('Enum') {
+            <select
+              [attr.id]="'filter-' + filter.key"
+              [value]="valueOf(filter.key)"
+              (change)="setValue(filter.key, $any($event.target).value)"
+            >
+              <option value="">Any</option>
+              @for (option of filter.options ?? []; track option) {
+                <option [value]="option">{{ option }}</option>
+              }
+            </select>
+          }
+          @case ('Date') {
+            <input
+              type="date"
+              [attr.id]="'filter-' + filter.key"
+              [value]="valueOf(filter.key)"
+              (change)="setValue(filter.key, $any($event.target).value)"
+            />
+          }
+          @case ('GuidList') {
+            <input
+              type="text"
+              class="resource-filter-bar__wide"
+              [attr.id]="'filter-' + filter.key"
+              placeholder="up to 4 ids, comma separated"
+              spellcheck="false"
+              [value]="valueOf(filter.key)"
+              (change)="setValue(filter.key, $any($event.target).value)"
+            />
+          }
+          @default {
+            <input
+              type="text"
+              [attr.id]="'filter-' + filter.key"
+              spellcheck="false"
+              [value]="valueOf(filter.key)"
+              (change)="setValue(filter.key, $any($event.target).value)"
+            />
+          }
+        }
+      </div>
+    }
+
+    <div class="resource-filter-bar__actions">
+      <p-button type="submit" label="Apply" />
+      <p-button
+        type="button"
+        label="Clear"
+        severity="secondary"
+        [text]="true"
+        (onClick)="clear()"
+      />
+    </div>
+  </form>
+}

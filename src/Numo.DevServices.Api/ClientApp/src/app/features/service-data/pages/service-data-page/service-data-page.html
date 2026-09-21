@@ -1,0 +1,84 @@
+<section class="service-data">
+  <header class="service-data__header">
+    <h1>Service data</h1>
+
+    <app-tenant-id-field />
+  </header>
+
+  @if (catalogueError()) {
+    <p-message severity="error" [text]="catalogueError()!" />
+  }
+
+  <nav class="service-data__picker">
+    @for (resource of resources(); track resource.key) {
+      <p-button
+        [label]="resource.label"
+        [severity]="resource.key === resourceKey() ? 'primary' : 'secondary'"
+        [text]="resource.key !== resourceKey()"
+        (onClick)="selectResource(resource.key)"
+      />
+    }
+  </nav>
+
+  @if (!hasTenantId()) {
+    <p-message
+      severity="info"
+      text="Enter a tenant id above. Every record in these services belongs to one tenant, and nothing is requested until there is one."
+    />
+  } @else if (!resourceKey()) {
+    <p-message severity="info" text="Pick a resource to browse." />
+  } @else if (descriptor()) {
+    <p class="service-data__service">
+      {{ descriptor()!.label }} from {{ descriptor()!.serviceName }}
+    </p>
+
+    <app-resource-filter-bar
+      [filters]="descriptor()!.filters"
+      [values]="filterValues()"
+      (applied)="applyFilters($event)"
+    />
+
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()!" />
+    }
+
+    @if (page(); as loaded) {
+      @if (loaded.notice) {
+        <p-message severity="warn" [text]="loaded.notice" />
+      }
+
+      <app-generic-record-table
+        [resourceKey]="resourceKey()!"
+        [columns]="descriptor()!.columns"
+        [rows]="loaded.rows"
+        [sortColumn]="sortColumn()"
+        [isSortDescending]="isSortDescending()"
+        (sortRequested)="applySort($event)"
+      />
+
+      <footer class="service-data__paging">
+        <p-button
+          label="Previous"
+          severity="secondary"
+          [disabled]="loaded.page <= 1 || isLoading()"
+          (onClick)="goToPage(loaded.page - 1)"
+        />
+
+        <span class="service-data__page-number">Page {{ loaded.page }}</span>
+
+        <p-button
+          label="Next"
+          severity="secondary"
+          [disabled]="!loaded.hasMore || isLoading()"
+          (onClick)="goToPage(loaded.page + 1)"
+        />
+
+        <span class="service-data__hint">
+          These services report no total, so there is no page count.
+        </span>
+      </footer>
+    } @else if (isLoading()) {
+      <p>Loading...</p>
+    }
+  }
+</section>

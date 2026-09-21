@@ -1,0 +1,49 @@
+<p-table [value]="[...rows()]" dataKey="id" [tableStyle]="{ 'min-width': '40rem' }">
+  <ng-template #header>
+    <tr>
+      <th class="generic-record-table__open"></th>
+
+      @for (column of columns(); track column.key) {
+        <th>
+          @if (column.isSortable) {
+            <button type="button" class="generic-record-table__sort" (click)="toggleSort(column)">
+              {{ column.label }}{{ sortMarker(column) }}
+            </button>
+          } @else {
+            {{ column.label }}
+          }
+        </th>
+      }
+    </tr>
+  </ng-template>
+
+  <ng-template #body let-row>
+    <tr>
+      <td class="generic-record-table__open">
+        <a [routerLink]="['/service-data', resourceKey(), row.id]">Open</a>
+
+        @if (row.deletedAt) {
+          <p-tag value="Deleted" severity="warn" />
+        }
+      </td>
+
+      @for (cell of row.cells; track $index) {
+        <td>
+          @if (cell.link) {
+            <a [routerLink]="['/service-data', cell.link.targetResource, cell.link.id]">
+              {{ display(cell) }}
+            </a>
+          } @else {
+            {{ display(cell) }}
+          }
+        </td>
+      }
+    </tr>
+  </ng-template>
+
+  <ng-template #emptymessage>
+    <tr>
+      <td [attr.colspan]="columns().length + 1">No rows.</td>
+    </tr>
+  </ng-template>
+</p-table>

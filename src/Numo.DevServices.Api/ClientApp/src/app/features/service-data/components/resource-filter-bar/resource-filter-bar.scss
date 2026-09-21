@@ -1,0 +1,32 @@
+.resource-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  &__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  &__wide {
+    min-width: 22rem;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  input,
+  select {
+    padding: 0.35rem 0.5rem;
+  }
+}

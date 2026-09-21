@@ -1,0 +1,15 @@
+.generic-record-table {
+  &__open {
+    white-space: nowrap;
+    width: 1%;
+  }
+
+  &__sort {
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+}

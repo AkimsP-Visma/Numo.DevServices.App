@@ -12,6 +12,11 @@ export const routes: Routes = [
       import('./features/service-health/service-health.routes').then((m) => m.serviceHealthRoutes),
   },
   {
+    path: 'service-data',
+    loadChildren: () =>
+      import('./features/service-data/service-data.routes').then((m) => m.serviceDataRoutes),
+  },
+  {
     path: 'feature-flags',
     loadChildren: () =>
       import('./features/feature-flags/feature-flags.routes').then((m) => m.featureFlagsRoutes),

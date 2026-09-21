@@ -1,0 +1,30 @@
+<section class="service-data-record">
+  <header class="service-data-record__header">
+    <div>
+      <a class="service-data-record__back" [routerLink]="['/service-data', resourceKey()]">
+        Back to {{ resourceKey() }}
+      </a>
+
+      <h1>{{ record()?.title ?? resourceKey() }}</h1>
+
+      <p class="service-data-record__id">{{ recordId() }}</p>
+    </div>
+
+    <app-tenant-id-field />
+  </header>
+
+  @if (!hasTenantId()) {
+    <p-message severity="info" text="Enter a tenant id to load this record." />
+  } @else if (isMissing()) {
+    <p-message
+      severity="info"
+      [text]="'No record with that id exists in ' + resourceKey() + ' for this tenant.'"
+    />
+  } @else if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage()!" />
+  } @else if (record(); as loaded) {
+    <app-generic-record-detail [fields]="loaded.fields" [relations]="loaded.relations" />
+  } @else if (isLoading()) {
+    <p>Loading...</p>
+  }
+</section>
