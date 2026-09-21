@@ -18,13 +18,17 @@ public sealed class DownstreamCallException(NumoError error, Exception innerExce
 /// </summary>
 internal static class DownstreamCall
 {
+    /// <summary>
+    /// Wraps one call, or several composed into one lambda: a resource needing a batched lookup or a
+    /// fan-out can nest these, and the innermost failure is the one that is reported.
+    /// </summary>
     public static async Task<T> InvokeAsync<T>(Func<Task<T>> call, string callDescription)
     {
         try
         {
             return await call();
         }
-        catch (Exception exception)
+        catch (Exception exception) when (ShouldDescribe(exception))
         {
             throw new DownstreamCallException(Describe(exception, callDescription), exception);
         }
@@ -47,11 +51,25 @@ internal static class DownstreamCall
         {
             return null;
         }
-        catch (Exception exception)
+        catch (Exception exception) when (ShouldDescribe(exception))
         {
             throw new DownstreamCallException(Describe(exception, callDescription), exception);
         }
     }
+
+    private static bool ShouldDescribe(Exception exception)
+        => exception switch
+        {
+            // Already names its own failure: re-describing an inner call's error would erase the
+            // specific id and status code a composed resource needs.
+            DownstreamCallException => false,
+
+            // A cancellation is the caller giving up, not a downstream failure. An HttpClient
+            // timeout arrives the same way but carries a TimeoutException, and that is one.
+            OperationCanceledException => exception.InnerException is TimeoutException,
+
+            _ => true,
+        };
 
     private static NumoError Describe(Exception exception, string callDescription)
         => exception switch

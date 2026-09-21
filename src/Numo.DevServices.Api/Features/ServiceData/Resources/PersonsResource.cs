@@ -10,8 +10,8 @@ namespace Numo.DevServices.Api.Features.ServiceData.Resources;
 /// <summary>
 /// The Person service's people. The model the other resources copy: the descriptor names every
 /// column and filter the frontend may use, <see cref="IPersonClient"/> failures arrive as exceptions
-/// and leave as <see cref="DownstreamCallException"/>, and HasMore comes from fetching the next page
-/// and testing it for emptiness, because no total count exists anywhere in either service.
+/// and leave as <see cref="DownstreamCallException"/>, and paging is left to
+/// <see cref="ResourcePageBuilder"/> so that only the filter and the row projection are written here.
 /// </summary>
 public sealed class PersonsResource(IPersonClient personClient) : IServiceDataResource
 {
@@ -49,17 +49,11 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
             new FilterDescriptor(IncludeDeletedFilterKey, "Include deleted", FilterKind.Boolean, Options: null),
         ]);
 
-    public async Task<ResourcePage> GetPageAsync(ResourceQuery query, CancellationToken cancellationToken)
-    {
-        var persons = await FetchPageAsync(query, query.Page);
-        IReadOnlyList<ResourceRow> rows = persons.Select(ToRow).ToList();
-
-        // A short page is already the last one, so the next page is only asked for when this one filled.
-        var hasMore = rows.Count == query.PageSize
-            && (await FetchPageAsync(query, query.Page + 1)).Any();
-
-        return new ResourcePage(rows, query.Page, query.PageSize, hasMore, Notice: null);
-    }
+    public Task<ResourcePage> GetPageAsync(ResourceQuery query, CancellationToken cancellationToken)
+        => ResourcePageBuilder.BuildAsync(
+            query,
+            (page, pageSize) => FetchPageAsync(query, page, pageSize),
+            ToRow);
 
     public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -70,13 +64,13 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
         return person is null ? null : ToRecord(person);
     }
 
-    private Task<IEnumerable<PersonDto>> FetchPageAsync(ResourceQuery query, int page)
+    private Task<IEnumerable<PersonDto>> FetchPageAsync(ResourceQuery query, int page, int pageSize)
     {
         // Page and PageSize are always set: an unset filter is a full-table read against a live service.
         var filter = new PersonFilter
         {
             Page = page,
-            PageSize = query.PageSize,
+            PageSize = pageSize,
             OrderBy = BuildOrderBy(query),
             FullNamePart = TextFilter(query, FullNamePartFilterKey),
             Email = TextFilter(query, EmailFilterKey),

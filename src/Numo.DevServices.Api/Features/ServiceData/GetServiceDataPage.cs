@@ -21,6 +21,22 @@ public sealed record GetServiceDataPageQuery(
 }
 
 /// <summary>
+/// Descriptor lookups shared by the validator, which rejects what a resource did not declare, and the
+/// handler, which substitutes the declared spelling of what it did.
+/// </summary>
+internal static class DeclaredKey
+{
+    public static ColumnDescriptor? FindColumn(ResourceDescriptor descriptor, string? key)
+        => descriptor.Columns.FirstOrDefault(column => IsSame(column.Key, key));
+
+    public static FilterDescriptor? FindFilter(ResourceDescriptor descriptor, string key)
+        => descriptor.Filters.FirstOrDefault(filter => IsSame(filter.Key, key));
+
+    public static bool IsSame(string left, string? right)
+        => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
 /// Keeps anything the descriptor does not declare from reaching a service. Rules that need the
 /// descriptor stay silent for an unknown resource key, which is the handler's
 /// <see cref="ServiceDataErrors.UnknownResource"/> failure and not a validation problem.
@@ -56,7 +72,7 @@ public sealed class GetServiceDataPageValidator : AbstractValidator<GetServiceDa
             return;
         }
 
-        var column = descriptor.Columns.FirstOrDefault(candidate => IsSameKey(candidate.Key, sortColumn));
+        var column = DeclaredKey.FindColumn(descriptor, sortColumn);
 
         if (column is null)
         {
@@ -84,7 +100,7 @@ public sealed class GetServiceDataPageValidator : AbstractValidator<GetServiceDa
 
         foreach (var (key, value) in filters)
         {
-            var filter = descriptor.Filters.FirstOrDefault(candidate => IsSameKey(candidate.Key, key));
+            var filter = DeclaredKey.FindFilter(descriptor, key);
 
             if (filter is null)
             {
@@ -106,12 +122,9 @@ public sealed class GetServiceDataPageValidator : AbstractValidator<GetServiceDa
             FilterKind.Date => DateOnly.TryParse(value, CultureInfo.InvariantCulture, out _),
             FilterKind.Boolean => bool.TryParse(value, out _),
             FilterKind.Enum => filter.Options is not null
-                && filter.Options.Any(option => IsSameKey(option, value)),
+                && filter.Options.Any(option => DeclaredKey.IsSame(option, value)),
             _ => true,
         };
-
-    private static bool IsSameKey(string left, string right)
-        => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class GetServiceDataPageHandler(
@@ -133,12 +146,7 @@ public sealed class GetServiceDataPageHandler(
         // request can be dropped instead of being paid for.
         cancellationToken.ThrowIfCancellationRequested();
 
-        var resourceQuery = new ResourceQuery(
-            query.Page,
-            query.PageSize,
-            query.SortColumn,
-            query.IsSortDescending,
-            query.Filters.ToDictionary(filter => filter.Key, filter => filter.Value, StringComparer.OrdinalIgnoreCase));
+        var resourceQuery = ToResourceQuery(query, resource.Descriptor);
 
         try
         {
@@ -149,5 +157,33 @@ public sealed class GetServiceDataPageHandler(
             logger.LogWarning(exception, "Service data page for resource {ResourceKey} failed.", resource.Descriptor.Key);
             return NumoResult.Fail<ResourcePage>(exception.Error);
         }
+    }
+
+    /// <summary>
+    /// Keys are matched ignoring case but must reach a service in their declared spelling: a service
+    /// silently ignores <c>OrderBy=FIRSTNAME</c>, which is the very failure the sortable check exists
+    /// to prevent, and a resource reading a filter by its exact key would miss a differently cased one.
+    /// </summary>
+    private static ResourceQuery ToResourceQuery(GetServiceDataPageQuery query, ResourceDescriptor descriptor)
+    {
+        var filters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (key, value) in query.Filters)
+        {
+            // An undeclared key never gets this far: the validator has already failed the request.
+            var filter = DeclaredKey.FindFilter(descriptor, key);
+
+            if (filter is not null)
+            {
+                filters[filter.Key] = value;
+            }
+        }
+
+        return new ResourceQuery(
+            query.Page,
+            query.PageSize,
+            DeclaredKey.FindColumn(descriptor, query.SortColumn)?.Key,
+            query.IsSortDescending,
+            filters);
     }
 }
