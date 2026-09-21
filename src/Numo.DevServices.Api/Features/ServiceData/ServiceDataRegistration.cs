@@ -1,4 +1,5 @@
 using Numo.Common.Microservice.Lib.CurrentTenant;
+using Numo.DevServices.Api.Features.ServiceData.Resources;
 using Numo.Employee.Lib.Extensions;
 using Numo.Person.Lib.Extensions;
 
@@ -32,6 +33,10 @@ internal static class ServiceDataRegistration
         // assembly already registers every class against the interfaces it implements, so an
         // explicit IServiceDataResource registration makes the catalogue see the same resource twice.
         services.AddScoped<ServiceDataCatalogue>();
+
+        // The convention scan registers a class against the interfaces it implements, and this one
+        // implements none, so without this line every resource that resolves it fails to activate.
+        services.AddScoped<PersonNameLookup>();
 
         return services;
     }

@@ -122,8 +122,8 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
                 new Cell(Format(person.StatusChangedAt), Link: null),
             ]);
 
-    // Relations are declared in the task that adds the resource on the other end, so that a link
-    // never points at a resource key the catalogue does not hold.
+    // A relation is declared once the resource on the other end exists, so that a link never points
+    // at a resource key the catalogue does not hold.
     private static ResourceRecord ToRecord(PersonDto person)
         => new(
             person.Id,
@@ -139,7 +139,9 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
                 new FieldValue("Status changed at", Format(person.StatusChangedAt), FieldKind.DateTime, Link: null),
                 new FieldValue("Deleted at", Format(person.DeletedAt), FieldKind.DateTime, Link: null),
             ],
-            []);
+            [
+                new RelationDescriptor("Employees", "employees", "personId", person.Id.ToString()),
+            ]);
 
     private static string Title(PersonDto person)
     {

@@ -1,3 +1,4 @@
+using FluentResults;
 using Numo.Common.Lib.Exceptions.Authorization;
 
 namespace Numo.DevServices.Api.Features.ServiceData;
@@ -56,6 +57,57 @@ internal static class DownstreamCall
             throw new DownstreamCallException(Describe(exception, callDescription), exception);
         }
     }
+
+    /// <summary>
+    /// One Employee-family call. Those clients report failure by returning a FluentResults result
+    /// rather than throwing, so the result is unwrapped here and nowhere else and no FluentResults
+    /// type reaches a resource, let alone the wire contract.
+    /// </summary>
+    public static Task<T> InvokeResultAsync<T>(Func<Task<Result<T>>> call, string callDescription)
+        => InvokeAsync(
+            async () =>
+            {
+                var result = await call();
+
+                return result.IsSuccess ? result.Value : throw Failed(result, callDescription);
+            },
+            callDescription);
+
+    /// <summary>
+    /// An Employee-family by-id call whose absent record is an answer rather than a failure. Unlike
+    /// the Person client these never throw: Numo.Employee.Lib declares EmployeeNotFoundException and
+    /// its siblings but throws none of them, so an absent record arrives as a failed result whose
+    /// message names the id - the service answers "Employee not found. Id: {id}" and the library's
+    /// own null-value branch answers "{Dto} with id {id} was not found". That message is the only
+    /// signal either of them gives, so it is matched in one place instead of in every resource.
+    /// </summary>
+    public static async Task<T?> FindResultAsync<T>(
+        Func<Task<Result<T>>> call,
+        Guid id,
+        string callDescription)
+        where T : class
+    {
+        var result = await InvokeAsync(call, callDescription);
+
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        return IsRecordAbsent(result, id) ? null : throw Failed(result, callDescription);
+    }
+
+    private static bool IsRecordAbsent(IResultBase result, Guid id)
+        => result.Errors.Any(error =>
+            error.Message.Contains(id.ToString(), StringComparison.OrdinalIgnoreCase)
+            && error.Message.Contains("not found", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>A failed result carries no status code, only messages, so they become the inner
+    /// exception rather than being dropped.</summary>
+    private static DownstreamCallException Failed(IResultBase result, string callDescription)
+        => new(
+            ServiceDataErrors.DownstreamCallFailed(callDescription, null),
+            new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Message))));
 
     private static bool ShouldDescribe(Exception exception)
         => exception switch
