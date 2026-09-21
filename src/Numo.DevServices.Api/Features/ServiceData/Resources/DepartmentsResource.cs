@@ -15,10 +15,16 @@ public sealed class DepartmentsResource(IDepartmentClient departmentClient) : IS
 {
     private const string ResourceKey = "departments";
     private const string PositionsResourceKey = "positions";
+    private const string AbsencesResourceKey = "absences";
     private const string DepartmentRolesResourceKey = "department-roles";
 
     private const string ActiveFromFilterKey = "activeFrom";
     private const string ActiveToFilterKey = "activeTo";
+
+    // A column key is sent as OrderBy and a filter key as a filter parameter. They spell the
+    // same thing here, but they are separate downstream contracts, so they are named apart.
+    private const string ActiveFromColumnKey = "activeFrom";
+    private const string ActiveToColumnKey = "activeTo";
     private const string IncludeDeletedFilterKey = "includeDeleted";
 
     /// <summary>How many children one record lists. A department at the top of a deep tree has as
@@ -41,8 +47,8 @@ public sealed class DepartmentsResource(IDepartmentClient departmentClient) : IS
         [
             new ColumnDescriptor("name", "Name", FieldKind.Text, IsSortable: true),
             new ColumnDescriptor("parentId", "Parent id", FieldKind.Guid, IsSortable: false),
-            new ColumnDescriptor(ActiveFromFilterKey, "Active from", FieldKind.Date, IsSortable: true),
-            new ColumnDescriptor(ActiveToFilterKey, "Active to", FieldKind.Date, IsSortable: true),
+            new ColumnDescriptor(ActiveFromColumnKey, "Active from", FieldKind.Date, IsSortable: true),
+            new ColumnDescriptor(ActiveToColumnKey, "Active to", FieldKind.Date, IsSortable: true),
         ],
         [
             new FilterDescriptor(ActiveFromFilterKey, "Active on or after", FilterKind.Date, Options: null),
@@ -136,6 +142,7 @@ public sealed class DepartmentsResource(IDepartmentClient departmentClient) : IS
             ],
             [
                 new RelationDescriptor("Positions", PositionsResourceKey, "departmentIds", department.Id.ToString()),
+                new RelationDescriptor("Absences", AbsencesResourceKey, "departmentIds", department.Id.ToString()),
                 new RelationDescriptor(
                     "Department roles",
                     DepartmentRolesResourceKey,

@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using Numo.Person.Common.QuerySupport.Ordering;
 using Numo.Person.Lib;
 using Numo.Person.Lib.Exceptions;
@@ -104,8 +103,8 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
                 new Cell(person.Email, Link: null),
                 new Cell(person.PersonCode, Link: null),
                 new Cell(person.Phone, Link: null),
-                new Cell(Format(person.IsActive), Link: null),
-                new Cell(Format(person.StatusChangedAt), Link: null),
+                new Cell(FieldFormat.Format(person.IsActive), Link: null),
+                new Cell(FieldFormat.Format(person.StatusChangedAt), Link: null),
             ]);
 
     // A relation is declared once the resource on the other end exists, so that a link never points
@@ -121,9 +120,9 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
                 new FieldValue("Email", person.Email, FieldKind.Text, Link: null),
                 new FieldValue("Person code", person.PersonCode, FieldKind.Text, Link: null),
                 new FieldValue("Phone", person.Phone, FieldKind.Text, Link: null),
-                new FieldValue("Active", Format(person.IsActive), FieldKind.Boolean, Link: null),
-                new FieldValue("Status changed at", Format(person.StatusChangedAt), FieldKind.DateTime, Link: null),
-                new FieldValue("Deleted at", Format(person.DeletedAt), FieldKind.DateTime, Link: null),
+                new FieldValue("Active", FieldFormat.Format(person.IsActive), FieldKind.Boolean, Link: null),
+                new FieldValue("Status changed at", FieldFormat.Format(person.StatusChangedAt), FieldKind.DateTime, Link: null),
+                new FieldValue("Deleted at", FieldFormat.Format(person.DeletedAt), FieldKind.DateTime, Link: null),
             ],
             [
                 new RelationDescriptor("Employees", "employees", "personId", person.Id.ToString()),
@@ -134,10 +133,4 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
         var name = $"{person.FirstName} {person.LastName}".Trim();
         return string.IsNullOrEmpty(name) ? person.Id.ToString() : name;
     }
-
-    private static string Format(bool value)
-        => value ? "true" : "false";
-
-    private static string? Format(DateTimeOffset? value)
-        => value?.ToString("O", CultureInfo.InvariantCulture);
 }

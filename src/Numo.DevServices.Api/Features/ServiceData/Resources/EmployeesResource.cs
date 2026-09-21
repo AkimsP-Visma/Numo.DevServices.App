@@ -1,4 +1,3 @@
-using System.Globalization;
 using Numo.Employee.Lib.Clients.Employee;
 using Numo.Employee.Lib.Models;
 
@@ -21,6 +20,10 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
     private const string PersonIdFilterKey = "personId";
     private const string IncludeDeletedFilterKey = "includeDeleted";
 
+    // A column key is sent as OrderBy and a filter key as a filter parameter. They spell the
+    // same thing here, but they are separate downstream contracts, so they are named apart.
+    private const string PersonIdColumnKey = "personId";
+
     /// <summary>
     /// How many person ids the personName pre-search may return. Budget: an employees GET carrying
     /// these ids plus paging, OrderBy and IncludeDeletedSince, measured at 911 characters for 18 ids
@@ -39,7 +42,7 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
         "Numo.Employee.Api",
         [
             new ColumnDescriptor("personName", "Person", FieldKind.Text, IsSortable: false),
-            new ColumnDescriptor(PersonIdFilterKey, "Person id", FieldKind.Guid, IsSortable: false),
+            new ColumnDescriptor(PersonIdColumnKey, "Person id", FieldKind.Guid, IsSortable: false),
             new ColumnDescriptor("code", "Code", FieldKind.Text, IsSortable: true),
             new ColumnDescriptor("email", "Work email", FieldKind.Text, IsSortable: true),
             new ColumnDescriptor("phone", "Work phone", FieldKind.Text, IsSortable: true),
@@ -172,7 +175,7 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
                 new FieldValue("Code", employee.Code, FieldKind.Text, Link: null),
                 new FieldValue("Work email", employee.WorkEmail, FieldKind.Text, Link: null),
                 new FieldValue("Work phone", employee.WorkPhone, FieldKind.Text, Link: null),
-                new FieldValue("Deleted at", Format(employee.DeletedAt), FieldKind.DateTime, Link: null),
+                new FieldValue("Deleted at", FieldFormat.Format(employee.DeletedAt), FieldKind.DateTime, Link: null),
             ],
             [
                 new RelationDescriptor("Positions", "positions", "employeeIds", employee.Id.ToString()),
@@ -185,7 +188,4 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
 
     private static string Title(EmployeeDto employee, string? personName)
         => personName ?? (string.IsNullOrEmpty(employee.Code) ? employee.Id.ToString() : employee.Code);
-
-    private static string? Format(DateTimeOffset? value)
-        => value?.ToString("O", CultureInfo.InvariantCulture);
 }

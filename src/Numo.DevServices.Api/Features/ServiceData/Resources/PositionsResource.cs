@@ -1,4 +1,3 @@
-using System.Globalization;
 using Numo.Employee.Lib.Clients.Department;
 using Numo.Employee.Lib.Clients.Employee;
 using Numo.Employee.Lib.Clients.JobTitle;
@@ -253,12 +252,12 @@ public sealed class PositionsResource(
                 new Cell(NameOrId(related.Department?.Name, position.DepartmentId), DepartmentLink(position)),
                 new Cell(NameOrId(related.JobTitle?.Name, position.JobTitleId), JobTitleLink(position)),
                 new Cell(position.Code, Link: null),
-                new Cell(Format(position.ActiveFrom), Link: null),
-                new Cell(Format(position.ActiveTo), Link: null),
-                new Cell(FormatNumber(position.Workload), Link: null),
-                new Cell(Format(position.Primary), Link: null),
-                new Cell(Format(position.Schedule), Link: null),
-                new Cell(Format(position.PayType), Link: null),
+                new Cell(FieldFormat.Format(position.ActiveFrom), Link: null),
+                new Cell(FieldFormat.Format(position.ActiveTo), Link: null),
+                new Cell(FieldFormat.FormatNumber(position.Workload), Link: null),
+                new Cell(FieldFormat.Format(position.Primary), Link: null),
+                new Cell(FieldFormat.Format(position.Schedule), Link: null),
+                new Cell(FieldFormat.Format(position.PayType), Link: null),
             ]);
 
     // No RelationDescriptor: a relation is a filtered grid of another resource, and nothing in the
@@ -288,13 +287,13 @@ public sealed class PositionsResource(
                     FieldKind.Text,
                     JobTitleLink(position)),
                 new FieldValue("Code", position.Code, FieldKind.Text, Link: null),
-                new FieldValue("Active from", Format(position.ActiveFrom), FieldKind.Date, Link: null),
-                new FieldValue("Active to", Format(position.ActiveTo), FieldKind.Date, Link: null),
-                new FieldValue("Workload", FormatNumber(position.Workload), FieldKind.Number, Link: null),
-                new FieldValue("Primary", Format(position.Primary), FieldKind.Boolean, Link: null),
-                new FieldValue("Use plan", Format(position.UsePlan), FieldKind.Boolean, Link: null),
-                new FieldValue("Schedule", Format(position.Schedule), FieldKind.Enum, Link: null),
-                new FieldValue("Pay type", Format(position.PayType), FieldKind.Enum, Link: null),
+                new FieldValue("Active from", FieldFormat.Format(position.ActiveFrom), FieldKind.Date, Link: null),
+                new FieldValue("Active to", FieldFormat.Format(position.ActiveTo), FieldKind.Date, Link: null),
+                new FieldValue("Workload", FieldFormat.FormatNumber(position.Workload), FieldKind.Number, Link: null),
+                new FieldValue("Primary", FieldFormat.Format(position.Primary), FieldKind.Boolean, Link: null),
+                new FieldValue("Use plan", FieldFormat.Format(position.UsePlan), FieldKind.Boolean, Link: null),
+                new FieldValue("Schedule", FieldFormat.Format(position.Schedule), FieldKind.Enum, Link: null),
+                new FieldValue("Pay type", FieldFormat.Format(position.PayType), FieldKind.Enum, Link: null),
                 new FieldValue(
                     "Legal relation id",
                     position.LegalRelationId?.ToString(),
@@ -308,7 +307,7 @@ public sealed class PositionsResource(
                     position.PositionId?.ToString(),
                     FieldKind.Guid,
                     Link: null),
-                new FieldValue("Deleted at", Format(position.DeletedAt), FieldKind.DateTime, Link: null),
+                new FieldValue("Deleted at", FieldFormat.Format(position.DeletedAt), FieldKind.DateTime, Link: null),
             ],
             []);
 
@@ -346,42 +345,6 @@ public sealed class PositionsResource(
             _ => string.IsNullOrEmpty(position.Code) ? position.Id.ToString() : position.Code,
         };
     }
-
-    private static string Format(bool value)
-        => value ? "true" : "false";
-
-    private static string? Format(bool? value)
-        => value is null ? null : Format(value.Value);
-
-    private static string Format(DateOnly value)
-        => value.ToString("O", CultureInfo.InvariantCulture);
-
-    private static string? Format(DateOnly? value)
-        => value is null ? null : Format(value.Value);
-
-    /// <summary>Deliberately not called Format: an int widens to float implicitly, so a Format
-    /// overload taking one would swallow an enum property a future library version retyped as an
-    /// integer and render the number. Named apart, that case stops compiling.</summary>
-    private static string FormatNumber(float value)
-        => value.ToString(CultureInfo.InvariantCulture);
-
-    private static string? Format(DateTimeOffset? value)
-        => value?.ToString("O", CultureInfo.InvariantCulture);
-
-    /// <summary>
-    /// The enums cross the wire as integers and the DTO types them as enums, so this renders a name
-    /// rather than a number without a lookup table of our own. Constrained to an enum on purpose:
-    /// were a future library version to retype one of these properties as an int, it would bind to
-    /// a numeric overload instead and the column would silently go back to showing a number. Between
-    /// this constraint and FormatNumber's name, that case stops compiling.
-    /// </summary>
-    private static string Format<T>(T value)
-        where T : struct, Enum
-        => value.ToString();
-
-    private static string? Format<T>(T? value)
-        where T : struct, Enum
-        => value is null ? null : Format(value.Value);
 
     /// <param name="Employee">Null when the service did not return it, which a soft-deleted or
     /// removed related record makes possible. Every consumer below treats that as a missing label

@@ -23,7 +23,12 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
     private const string DepartmentIdsFilterKey = "departmentIds";
     private const string FromFilterKey = "from";
     private const string TillFilterKey = "till";
-    private const string StatusesFilterKey = "statuses";
+    private const string StatusFilterKey = "status";
+
+    // A column key is sent as OrderBy and a filter key as a filter parameter. They spell the
+    // same thing here, but they are separate downstream contracts, so they are named apart.
+    private const string FromColumnKey = "from";
+    private const string TillColumnKey = "till";
     private const string IncludeDeletedFilterKey = "includeDeleted";
 
     // Only a column probed to actually sort is marked sortable: the service silently ignores an
@@ -36,8 +41,8 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
         [
             new ColumnDescriptor("employeeId", "Employee id", FieldKind.Guid, IsSortable: false),
             new ColumnDescriptor("departmentId", "Department id", FieldKind.Guid, IsSortable: false),
-            new ColumnDescriptor(FromFilterKey, "From", FieldKind.Date, IsSortable: true),
-            new ColumnDescriptor(TillFilterKey, "Till", FieldKind.Date, IsSortable: true),
+            new ColumnDescriptor(FromColumnKey, "From", FieldKind.Date, IsSortable: true),
+            new ColumnDescriptor(TillColumnKey, "Till", FieldKind.Date, IsSortable: true),
             new ColumnDescriptor("type", "Type", FieldKind.Enum, IsSortable: false),
             new ColumnDescriptor("status", "Status", FieldKind.Enum, IsSortable: false),
             new ColumnDescriptor("payTypeCode", "Pay type code", FieldKind.Text, IsSortable: false),
@@ -55,10 +60,10 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
                 Options: null),
             new FilterDescriptor(FromFilterKey, "Absent on or after", FilterKind.Date, Options: null),
             new FilterDescriptor(TillFilterKey, "Absent on or before", FilterKind.Date, Options: null),
-            // Named for the downstream array it fills, which takes several statuses; the wire
-            // contract has no list-valued enum filter, so one status reaches it at a time.
+            // Singular: the downstream filter is an array, but the wire contract has no
+            // list-valued enum kind, so a plural key would promise a list it cannot carry.
             new FilterDescriptor(
-                StatusesFilterKey,
+                StatusFilterKey,
                 "Status",
                 FilterKind.Enum,
                 FieldFormat.Options<AbsenceStatus>()),
@@ -83,7 +88,7 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
 
     private Task<IEnumerable<AbsenceDto>> FetchPageAsync(ResourceQuery query, int page, int pageSize)
     {
-        var status = ResourceQueryFilters.ReadEnum<AbsenceStatus>(query, StatusesFilterKey);
+        var status = ResourceQueryFilters.ReadEnum<AbsenceStatus>(query, StatusFilterKey);
 
         // Page and PageSize are always set: an unset filter is a full-table read.
         var filter = new AbsenceFilter
