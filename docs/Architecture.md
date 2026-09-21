@@ -69,6 +69,12 @@ Three deliberate departures from the `Numo.TimeTracking.*` module:
    would match `Guid.Empty` for every row. Introducing tenancy later is a base-class change plus a
    migration.
 
+   `Features/ServiceData/` now uses that same interface, which is not a reversal of this decision.
+   The two are different things: there it supplies a tenant id to *downstream* Person and Employee
+   calls, set per request from a header through the supported `AddNumoTenantSetter` seam, and this
+   app's own entities remain untenanted. Nothing reads a tenant from a principal, because there is
+   still no principal to read.
+
 The host also uses the real numo-core builder rather than the reference's
 `RunNumoCoreFeatureInstallers` workaround, which exists only because that host predates it.
 
@@ -85,7 +91,27 @@ hosting for the built bundle is still to be decided.
 
 ## Not wired yet
 
-- **Authentication.** The platform moved to Keycloak; nothing is configured and every endpoint is
-  open. Expect to add authentication to the host, `[Authorize]` to controllers, tenancy to
-  entities, and a token interceptor to the frontend as one piece of work.
+- **Authentication.** Nothing is configured and every endpoint is open. Expect to add authentication
+  to the host, `[Authorize]` to controllers, tenancy to entities, and a token interceptor to the
+  frontend as one piece of work.
+
+  Note the platform itself uses Microsoft Identity Web, not Keycloak as earlier drafts of this
+  document said: `Numo.Authentication.Lib` exposes `AddMicrosoftIdentityWebApiAuthentication`,
+  `EnableTokenAcquisitionToCallDownstreamApi` and `AddDistributedTokenCaches`.
+
+  **`Features/ServiceData/` is the first slice that must gain `[Authorize]`**, and the reason is
+  worth stating plainly. It reads personal data - names, emails, phones and person codes - for
+  whatever tenant id a caller types into the browser, with no credential of any kind, because the
+  Person and Employee services enforce nothing beyond that header's presence. That is acceptable
+  only while this app is network-internal and developer-only. `docs/Purpose.md`'s standing decision
+  against a pass-through route was written to keep this app from becoming a hole into the internal
+  network; that risk arrives through this slice by the data path rather than the path path, so the
+  decision is recorded here rather than left implicit.
+
+- **A dependency hazard worth knowing about.** The `positions` detail page fans out concurrently,
+  and the tenant override reaching those parallel calls depends on `AddNumoTenantSetter` storing it
+  in an `AsyncLocal`, which flows into child tasks. That is `AsyncLocal`'s own documented behaviour,
+  so it is safe today; but if a future `Numo.Common.Microservice.Lib` switched to request-scoped
+  storage, the symptom would be wrong-tenant data rather than an error. Worth re-probing on a major
+  bump of that package.
 - **Tests, Docker Compose, CI, i18n.**

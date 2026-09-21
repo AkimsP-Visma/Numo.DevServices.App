@@ -130,8 +130,19 @@ public sealed record ResourceQuery(
     IReadOnlyDictionary<string, string> Filters);
 
 public enum FieldKind { Text, Guid, Date, DateTime, Number, Boolean, Enum }
-public enum FilterKind { Text, Guid, Date, Boolean, Enum }
+public enum FilterKind { Text, Guid, Date, Boolean, Enum, GuidList }
 ```
+
+`FilterKind.GuidList` was added during implementation: the Employee service's id filters are arrays,
+and a reverse relation onto one of them cannot be expressed by a single id. It carries several ids in
+one value, comma delimited, capped at four by the page validator so an overlong list is a stated 400
+rather than a downstream request the client library turns into a POST.
+
+**The wire form of a filter** is `filters[key]=value`, keyed by `FilterDescriptor.Key`. The controller
+reads those by hand rather than by model binding, because given no `filters[...]` key at all the
+dictionary binder falls back to the bare query string and swallows `page` and `pageSize` as filters. A
+bare key is therefore ignored rather than rejected, which is why the frontend's API service translates
+into the bracket form. The frontend's own route URL is a separate thing and keeps bare keys.
 
 `ResourceQuery.Filters` is a dictionary keyed by `FilterDescriptor.Key`, so a resource reads only the
 filters it declared and an unknown key is rejected by the action's validator rather than passed
@@ -215,11 +226,23 @@ neither a by-id view route nor an `Ids` filter on positions exists.
 
 **Search.** `persons` gets `fullNamePart` and `email` directly. `employees` and `positions` get a
 person-name filter implemented as a pre-search: `persons?FullNamePart=x` yields ids which feed
-`PersonIds`. It is capped at 20 ids, below the 1000-character query-string ceiling that would otherwise
-POST to a non-existent `/view/search` route, and the cap sets `ResourcePage.Notice` so the UI can say it
-is showing the first 20 matching people rather than silently lying. Structured filters are declared
-where they exist: absences `From`/`Till`/`Statuses`, positions `Primary`/`From`/`Till`/`DepartmentIds`,
-departments `ActiveFrom`/`ActiveTo`, department roles `Active`/`RoleType`, persons `IsActive`.
+`PersonIds`, and the cap sets `ResourcePage.Notice` so the UI says it is showing the first N matching
+people rather than silently lying.
+
+**Corrected after measurement:** this paragraph said "capped at 20 ids" for both. 20 is unaffordable.
+The caps were measured by calling each filter's own `ToQueryString()` against the 1000-character
+ceiling, and they differ per resource because each filter carries a different parameter set:
+`employees` caps at **18** (911 characters worst case), `positions` at **8** (891 characters alongside
+a four-value list filter). Above the ceiling the client library switches to `POST {endpoint}/search`,
+which breaks the GET-only constraint on `employees` and 404s outright on `positions`, where no such
+route exists.
+
+Structured filters are declared where they exist: absences `From`/`Till`/`Status` (singular, because
+the wire contract has no list-valued enum kind and a plural key would promise a list it cannot carry),
+positions `Primary`/`From`/`Till`/`DepartmentIds`, departments `ActiveFrom`/`ActiveTo`, department
+roles `Active`/`RoleType`, persons `IsActive`. Both `employees` and `absences` also declare
+`employeeIds`, and `absences` and `positions` declare `departmentIds`, because other resources'
+reverse relations point at those keys.
 
 **Relations.** Forward links come from the foreign keys on each DTO. Reverse links are only declared
 where a matching downstream filter exists: person to employees, employee to positions and absences and

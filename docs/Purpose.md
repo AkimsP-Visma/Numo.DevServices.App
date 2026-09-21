@@ -17,12 +17,14 @@ service win over anything else.
    a selection as JSON shaped for pasting into a local `appsettings.Development.json`. The
    copy-out format is the point of the feature, not a nicety. *Listing is built* -
    `Features/FeatureFlags/` plus the `/feature-flags` page; the copy-out is not.
-3. **Service data browsing.** Lists of records, and a single-record view for a chosen row.
+3. **Service data browsing.** Lists of records, and a single-record view for a chosen row. *Built* -
+   `Features/ServiceData/` plus the `/service-data` pages, over seven resources of the Person and
+   Employee services.
 4. **Service status dashboard.** Whether every service under the `Services` configuration section
    answers its ping endpoint, refreshed while the page is open. *Built* - `Features/ServiceHealth/`
    plus the `/service-health` page.
 
-Features 1 and 4 are built, 2 in part, 3 not at all. `Features/SampleItems/` is scaffolding that
+Features 1, 3 and 4 are built, 2 in part. `Features/SampleItems/` is scaffolding that
 proves the pipeline end to end; it is not one of them.
 
 ## Design decisions
@@ -67,6 +69,40 @@ proves the pipeline end to end; it is not one of them.
   service behind it is not still answers 200, with a page of its own, so the status code alone would
   read as healthy. One service being down is data rather than a failure, so the endpoint answers 200
   with a row per service either way.
+- **Every Person and Employee call needs a `Numo-Tenant-Id` header, and nothing else.** Both
+  services answer anonymously given that header and 401 without it, so the browsing feature carries
+  no bearer token. The tenant id comes from a text field in the UI and is sent on every request. Two
+  consequences: a well-formed tenant the services do not recognise answers an empty list rather than
+  an error, so an empty grid must never be presented as "no data"; and nothing is requested at all
+  until an id is entered. The header reaches the services through the client libraries, which read
+  it from `INumoCurrentTenantService` - set per request through the supported `AddNumoTenantSetter`
+  seam, not a custom implementation.
+- **`FeatureManagement:AllowUnauthorizedApiCalls` exists only because this app has no authenticated
+  principal.** Without it the Employee client libraries throw `UnauthorizedException` client-side,
+  before a socket is opened, because their header handlers resolve `ICurrentPrincipalService`. It
+  lives in the committed `appsettings.json` rather than the gitignored development file, or the
+  feature works on one machine and throws on every other. Remove it when authentication lands.
+- **Neither service reports a total count anywhere**, in no envelope and no header. So paging is
+  next/prev only, `hasMore` is derived by fetching page N+1 and testing it for emptiness, and the UI
+  shows no page count. Inflating `PageSize` to detect a next page is wrong, not merely inelegant:
+  the server window is a function of `PageSize`, so asking for one extra row shifts the next page's
+  start and silently skips a record at every boundary.
+- **Ordering is opt-in per column and its syntax is narrow.** `OrderBy=name` ascends,
+  `OrderBy=-name` descends, and `name desc`, `name:desc` and a comma-joined pair are all silently
+  ignored, as is any column the service does not mark orderable. An empty `OrderBy=` makes the
+  request fail outright, so the parameter is omitted rather than sent blank. Because an unsupported
+  column fails silently, a column is only marked sortable after a probe showed it actually sorts.
+- **No human name exists anywhere in the Employee service.** `EmployeeDto` is ids, a code, an
+  email and a phone; names live only on `PersonDto`. So the employees and positions grids resolve
+  names with one batched `IPersonClient` call per page, capped because the client library switches
+  to a `POST {endpoint}/search` above 1000 characters of query string and
+  `/api/positions/view/search` does not exist at all.
+- **`department-roles` is the one resource with no client library.** `DepartmentRoleDto` is
+  internal in `Numo.Employee.Lib` and no client method exposes the unfiltered route, so that
+  resource owns an `HttpClient`, a local record, the response envelope and its own tenant header. It
+  is the exception, commented as such in the file, and parsing the envelope itself buys it the one
+  thing the libraries cannot give: an absent record recognised from the error's structured metadata
+  rather than from the wording of its message.
 - **Listing flags takes two calls, because per-environment state is opt-in.**
   `GET /api/v2/flags/{projectKey}` omits the `environments` object entirely unless every wanted
   environment is named in a repeated `env` parameter, so the project's environments are read from
@@ -94,7 +130,9 @@ proves the pipeline end to end; it is not one of them.
   next step is storing it in this app's database and editing it through the UI, which is what the
   scaffolded EF Core setup is for. The swap is a second implementation of that same interface plus
   a registration change - handlers do not know where the list came from.
-- **What does "generic components from JSON" mean concretely?** A column-inferring table over
-  arbitrary JSON is very different from a backend that returns an explicit display descriptor
-  (columns, labels, formats) alongside the rows. The second keeps the frontend dumber and is
-  worth considering first.
+- **Answered: "generic components from JSON" is an explicit display descriptor.**
+  `Features/ServiceData/` settles it. Each resource declares its columns, filters and relations in
+  C#, and the frontend has two components that render whatever arrives. Seven resources needed no
+  per-resource frontend code, and a cell or field carries an optional link so grid-to-grid
+  navigation is data rather than TypeScript. The column-inferring alternative was rejected because
+  the frontend would have to guess labels and formats and could not know the relations at all.
