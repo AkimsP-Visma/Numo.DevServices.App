@@ -83,4 +83,10 @@ public enum FilterKind
     Date,
     Boolean,
     Enum,
+
+    /// <summary>Several ids in one value, delimited by
+    /// <see cref="ResourceQueryFilters.ListDelimiter"/>. Needed because the Employee service's id
+    /// filters are arrays, and a relation onto one of them cannot be expressed by a single id.
+    /// </summary>
+    GuidList,
 }

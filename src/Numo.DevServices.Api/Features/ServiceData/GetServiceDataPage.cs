@@ -123,8 +123,21 @@ public sealed class GetServiceDataPageValidator : AbstractValidator<GetServiceDa
             FilterKind.Boolean => bool.TryParse(value, out _),
             FilterKind.Enum => filter.Options is not null
                 && filter.Options.Any(option => DeclaredKey.IsSame(option, value)),
+            FilterKind.GuidList => IsGuidListWellFormed(value),
             _ => true,
         };
+
+    /// <summary>
+    /// The count is checked here and not in the resource so that an overlong list is a stated 400
+    /// rather than a downstream request the client library silently turns into a POST search.
+    /// </summary>
+    private static bool IsGuidListWellFormed(string value)
+    {
+        var parts = value.Split(ResourceQueryFilters.ListDelimiter, StringSplitOptions.TrimEntries);
+
+        return parts.Length <= ResourceQueryFilters.MaxListValues
+            && parts.All(part => System.Guid.TryParse(part, out _));
+    }
 }
 
 public sealed class GetServiceDataPageHandler(
