@@ -1,1 +1,132 @@
 /* You can add global styles to this file, and also import other style files */
+
+/*
+ * Solid Win98-style status colors, kept in sync with the matching severities in
+ * win98-preset.ts (tag/message). Page-specific SCSS (e.g. service-health-page)
+ * reads these instead of hardcoding its own hex, or falling back to Aura's
+ * pastel `--p-green-500`/`--p-red-500` defaults.
+ */
+:root {
+  --win98-success-color: #0a7d0a;
+  --win98-warn-color: #c77f00;
+  --win98-danger-color: #b22222;
+}
+
+body {
+  font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+  font-size: 11px;
+}
+
+/*
+ * @vismaux/vud (the design-system stylesheet loaded globally in angular.json)
+ * ships a bare `body { padding-top: 10.5rem }` rule meant for a different app
+ * shell with a fixed top nav; this app has none, so it just leaves 105px of
+ * body background exposed above the title bar. Rather than fight that rule,
+ * this gives the exposed strip a Windows-98-desktop dither pattern instead of
+ * plain white - two close teal tones, not theme tokens, since this is desktop
+ * wallpaper behind the "window", not a themed component surface.
+ */
+body {
+  background-color: #017a7a;
+  background-image:
+    linear-gradient(45deg, #008080 25%, transparent 25%, transparent 75%, #008080 75%, #008080),
+    linear-gradient(45deg, #008080 25%, transparent 25%, transparent 75%, #008080 75%, #008080);
+  background-size: 4px 4px;
+  background-position:
+    0 0,
+    2px 2px;
+  image-rendering: pixelated;
+}
+
+/*
+ * PrimeNG's compiled component styles only wire a `border`/`box-shadow` into the
+ * base .p-button, .p-tag and .p-dialog-header rules that our design tokens (see
+ * win98-preset.ts) can reach directly for every other component. These few rules
+ * fill that gap, reading colors back from the same preset's generated CSS
+ * variables so the preset stays the single source of truth.
+ */
+.p-button {
+  border-color: var(--p-surface-950);
+  box-shadow:
+    inset 1px 1px 0 var(--p-surface-0),
+    inset -1px -1px 0 var(--p-surface-500);
+}
+
+.p-button:not(:disabled):active {
+  box-shadow:
+    inset 1px 1px 0 var(--p-surface-500),
+    inset -1px -1px 0 var(--p-surface-0);
+}
+
+/*
+ * PrimeNG's "text" button variant is a deliberately border-less, background-less
+ * ghost button (`.p-button-text` sets both to transparent, at the same selector
+ * specificity as the rule above but injected after it, so it always wins). This
+ * theme has no such flat idiom - every clickable button is a raised box - so the
+ * text variant (used for the resource-picker tabs and "Clear" actions) gets the
+ * same face color and bevel, just via a selector repeated for extra specificity
+ * instead of !important.
+ */
+.p-button.p-button.p-button-text {
+  background: var(--p-surface-50);
+  border-color: var(--p-surface-950);
+  box-shadow:
+    inset 1px 1px 0 var(--p-surface-0),
+    inset -1px -1px 0 var(--p-surface-500);
+}
+
+.p-button.p-button.p-button-text:not(:disabled):active {
+  box-shadow:
+    inset 1px 1px 0 var(--p-surface-500),
+    inset -1px -1px 0 var(--p-surface-0);
+}
+
+.p-tag {
+  border: 1px solid var(--p-content-border-color);
+}
+
+/*
+ * `.p-button-rounded` (the dialog's header close button) hardcodes
+ * `border-radius: 50%` in PrimeNG's compiled CSS rather than reading a
+ * token, so it's the one spot a plain token override can't reach - a
+ * classic Windows title-bar button is a square box, not a circle.
+ */
+.p-button.p-button.p-button-rounded {
+  border-radius: 0;
+}
+
+.p-dialog-header {
+  background: linear-gradient(to right, var(--p-primary-950), var(--p-primary-color));
+  color: var(--p-primary-contrast-color);
+}
+
+.p-dialog-title {
+  color: var(--p-primary-contrast-color);
+}
+
+/* Firefox has no ::-webkit-scrollbar-*; this is its closest equivalent. */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: var(--p-surface-500) var(--p-surface-50);
+}
+
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--p-surface-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--p-surface-50);
+  border: 1px solid var(--p-surface-950);
+  box-shadow:
+    inset 1px 1px 0 var(--p-surface-0),
+    inset -1px -1px 0 var(--p-surface-500);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--p-surface-50);
+}

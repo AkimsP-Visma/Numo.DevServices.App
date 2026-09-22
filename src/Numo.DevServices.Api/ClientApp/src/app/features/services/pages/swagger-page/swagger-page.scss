@@ -5,9 +5,9 @@
 .swagger-page__notice {
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
-  border-left: 4px solid var(--p-amber-500, #f59e0b);
-  background: var(--p-amber-50, #fffbeb);
-  color: var(--p-text-color, #1f2937);
+  background: var(--p-surface-0);
+  border: 2px solid var(--win98-warn-color);
+  color: var(--win98-warn-color);
 }
 
 .swagger-page__toolbar {
@@ -22,7 +22,7 @@
 }
 
 .swagger-page__error {
-  color: var(--p-red-600, #b00020);
+  color: var(--win98-danger-color);
 }
 
 .swagger-page__hint {

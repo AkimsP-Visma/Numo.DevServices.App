@@ -8,38 +8,40 @@
 
         @switch (filter.kind) {
           @case ('Boolean') {
-            <select
-              [attr.id]="'filter-' + filter.key"
-              [value]="valueOf(filter.key)"
-              (change)="setValue(filter.key, $any($event.target).value)"
-            >
-              <option value="">Any</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
+            <p-select
+              [inputId]="'filter-' + filter.key"
+              [options]="[...booleanOptions]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="valueOf(filter.key)"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="setValue(filter.key, $event)"
+            />
           }
           @case ('Enum') {
-            <select
-              [attr.id]="'filter-' + filter.key"
-              [value]="valueOf(filter.key)"
-              (change)="setValue(filter.key, $any($event.target).value)"
-            >
-              <option value="">Any</option>
-              @for (option of filter.options ?? []; track option) {
-                <option [value]="option">{{ option }}</option>
-              }
-            </select>
+            <p-select
+              [inputId]="'filter-' + filter.key"
+              [options]="[...enumOptions(filter)]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="valueOf(filter.key)"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="setValue(filter.key, $event)"
+            />
           }
           @case ('Date') {
-            <input
-              type="date"
-              [attr.id]="'filter-' + filter.key"
-              [value]="valueOf(filter.key)"
-              (change)="setValue(filter.key, $any($event.target).value)"
+            <p-datepicker
+              [inputId]="'filter-' + filter.key"
+              dateFormat="yy-mm-dd"
+              [showButtonBar]="true"
+              [ngModel]="dateValueOf(filter.key)"
+              [ngModelOptions]="{ standalone: true }"
+              (ngModelChange)="setDateValue(filter.key, $event)"
             />
           }
           @case ('GuidList') {
             <input
+              pInputText
               type="text"
               class="resource-filter-bar__wide"
               [attr.id]="'filter-' + filter.key"
@@ -51,6 +53,7 @@
           }
           @default {
             <input
+              pInputText
               type="text"
               [attr.id]="'filter-' + filter.key"
               spellcheck="false"

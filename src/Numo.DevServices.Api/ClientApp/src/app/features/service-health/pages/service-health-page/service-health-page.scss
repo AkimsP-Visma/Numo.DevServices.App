@@ -32,16 +32,19 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 1rem;
-    border: 1px solid var(--p-content-border-color, #dee2e6);
-    border-radius: 0.5rem;
+    background: var(--p-surface-50);
+    border: 1px solid var(--p-surface-950);
     border-left-width: 4px;
+    box-shadow:
+      inset 1px 1px 0 var(--p-surface-0),
+      inset -1px -1px 0 var(--p-surface-500);
 
     &--up {
-      border-left-color: var(--p-green-500, #22c55e);
+      border-left-color: var(--win98-success-color);
     }
 
     &--down {
-      border-left-color: var(--p-red-500, #ef4444);
+      border-left-color: var(--win98-danger-color);
     }
   }
 
@@ -58,7 +61,7 @@
   }
 
   &__location {
-    font-family: monospace;
+    font-family: 'Courier New', monospace;
     font-size: 0.8rem;
     color: var(--p-text-muted-color, #6c757d);
     word-break: break-all;

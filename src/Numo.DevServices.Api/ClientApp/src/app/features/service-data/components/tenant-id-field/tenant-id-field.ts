@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
 import { TenantIdStore } from '../../state/tenant-id.store';
 
 /**
@@ -9,7 +10,7 @@ import { TenantIdStore } from '../../state/tenant-id.store';
  */
 @Component({
   selector: 'app-tenant-id-field',
-  imports: [ButtonModule],
+  imports: [ButtonModule, InputTextModule],
   templateUrl: './tenant-id-field.html',
   styleUrl: './tenant-id-field.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

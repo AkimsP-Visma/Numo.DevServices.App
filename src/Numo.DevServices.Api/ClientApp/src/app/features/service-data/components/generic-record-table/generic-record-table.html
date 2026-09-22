@@ -1,18 +1,25 @@
-<p-table [value]="[...rows()]" dataKey="id" [tableStyle]="{ 'min-width': '40rem' }">
+<p-table
+  [value]="[...rows()]"
+  dataKey="id"
+  [tableStyle]="{ 'min-width': '40rem' }"
+  [customSort]="true"
+  [sortField]="sortColumn()"
+  [sortOrder]="isSortDescending() ? -1 : 1"
+  (onSort)="onSort($event)"
+>
   <ng-template #header>
     <tr>
       <th class="generic-record-table__open"></th>
 
       @for (column of columns(); track column.key) {
-        <th>
-          @if (column.isSortable) {
-            <button type="button" class="generic-record-table__sort" (click)="toggleSort(column)">
-              {{ column.label }}{{ sortMarker(column) }}
-            </button>
-          } @else {
+        @if (column.isSortable) {
+          <th [pSortableColumn]="column.key">
             {{ column.label }}
-          }
-        </th>
+            <p-sortIcon [field]="column.key" />
+          </th>
+        } @else {
+          <th>{{ column.label }}</th>
+        }
       }
     </tr>
   </ng-template>

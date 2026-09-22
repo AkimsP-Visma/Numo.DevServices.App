@@ -34,25 +34,11 @@ export class GenericRecordTable {
 
   readonly sortRequested = output<SortRequest>();
 
-  protected toggleSort(column: ColumnDescriptor): void {
-    if (!column.isSortable) {
-      return;
-    }
-
-    const isCurrent = this.sortColumn() === column.key;
-
-    this.sortRequested.emit({
-      column: column.key,
-      isDescending: isCurrent ? !this.isSortDescending() : false,
-    });
-  }
-
-  protected sortMarker(column: ColumnDescriptor): string {
-    if (!column.isSortable || this.sortColumn() !== column.key) {
-      return '';
-    }
-
-    return this.isSortDescending() ? ' (desc)' : ' (asc)';
+  /** [customSort] stops p-table from sorting `rows()` itself against `column.key` - our rows carry
+   * cells positionally, not as flat properties the table could resolve - so this only forwards the
+   * click's intent to the parent, which re-fetches the page already sorted by the server. */
+  protected onSort(event: { field: string; order: number }): void {
+    this.sortRequested.emit({ column: event.field, isDescending: event.order === -1 });
   }
 
   /** Empty and absent read the same in a grid, so both show the placeholder rather than nothing. */
