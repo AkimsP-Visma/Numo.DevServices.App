@@ -31,6 +31,7 @@ public sealed class PositionsResource(
     private const string EmployeesResourceKey = "employees";
     private const string DepartmentsResourceKey = "departments";
     private const string JobTitlesResourceKey = "job-titles";
+    private const string AbsencesResourceKey = "absences";
 
     private const string PersonNameFilterKey = "personName";
     private const string EmployeeIdsFilterKey = "employeeIds";
@@ -39,6 +40,7 @@ public sealed class PositionsResource(
     private const string FromFilterKey = "from";
     private const string TillFilterKey = "till";
     private const string IncludeDeletedFilterKey = "includeDeleted";
+    private const string LegalRelationIdFilterKey = "legalRelationId";
 
     /// <summary>
     /// How many person ids the personName pre-search may return. This is not the employees
@@ -91,6 +93,7 @@ public sealed class PositionsResource(
             new FilterDescriptor(FromFilterKey, "Active on or after", FilterKind.Date, Options: null),
             new FilterDescriptor(TillFilterKey, "Active on or before", FilterKind.Date, Options: null),
             new FilterDescriptor(IncludeDeletedFilterKey, "Include deleted", FilterKind.Boolean, Options: null),
+            new FilterDescriptor(LegalRelationIdFilterKey, "Legal relation id", FilterKind.Guid, Options: null),
         ]);
 
     public async Task<ResourcePage> GetPageAsync(ResourceQuery query, CancellationToken cancellationToken)
@@ -187,6 +190,7 @@ public sealed class PositionsResource(
             From = ResourceQueryFilters.ReadDate(query, FromFilterKey),
             Till = ResourceQueryFilters.ReadDate(query, TillFilterKey),
             IncludeDeletedSince = ResourceQueryFilters.ReadIncludeDeletedSince(query, IncludeDeletedFilterKey),
+            LegalRelationId = ResourceQueryFilters.ReadGuid(query, LegalRelationIdFilterKey),
         };
 
         return DownstreamCall.InvokeResultAsync(
@@ -264,10 +268,11 @@ public sealed class PositionsResource(
                 new Cell(FieldFormat.Format(position.PayType), Link: null),
             ]);
 
-    // No RelationDescriptor: a relation is a filtered grid of another resource, and nothing in the
-    // catalogue can be filtered by a position. The four navigations this record offers are the
-    // record links on its fields instead. Positions by job title is impossible either way, because
-    // PositionFilter has no JobTitleId.
+    // Field links cover the employee, department and job title - each a single record a position
+    // has exactly one of. LegalRelationId is different: Numo.Employee.Lib has no LegalRelation
+    // entity or client at all, only this bare id, shared with AbsenceDto. There is nothing to link
+    // to, but positions and absences can both be filtered by it - so it becomes two relations
+    // (a filtered grid of many) rather than a link (a single other record) or dead text.
     private static ResourceRecord ToRecord(PositionDto position, PositionRelations related)
         => new(
             position.Id,
@@ -313,7 +318,16 @@ public sealed class PositionsResource(
                     Link: null),
                 new FieldValue("Deleted at", FieldFormat.Format(position.DeletedAt), FieldKind.DateTime, Link: null),
             ],
-            []);
+            LegalRelationRelations(position.LegalRelationId));
+
+    private static IReadOnlyList<RelationDescriptor> LegalRelationRelations(Guid? legalRelationId)
+        => legalRelationId is null
+            ? []
+            :
+            [
+                RelationDescriptor.To("Positions", ResourceKey, LegalRelationIdFilterKey, legalRelationId.Value.ToString()),
+                RelationDescriptor.To("Absences", AbsencesResourceKey, LegalRelationIdFilterKey, legalRelationId.Value.ToString()),
+            ];
 
     /// <summary>
     /// A related object the service did not return leaves the row showing the foreign key it has.

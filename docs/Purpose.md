@@ -102,6 +102,13 @@ proves the pipeline end to end; it is not one of them.
   names with one batched `IPersonClient` call per page, capped because the client library switches
   to a `POST {endpoint}/search` above 1000 characters of query string and
   `/api/positions/view/search` does not exist at all.
+- **There is no LegalRelation entity anywhere in `Numo.Employee.Lib`.** `PositionDto` and
+  `AbsenceDto` each carry a bare `LegalRelationId`, and `PositionFilter`/`AbsenceFilter` can filter
+  by it, but no client or route ever returns a legal relation's own data - not even a name. So it
+  is not a resource of its own; a position's or absence's "Legal relation id" field carries two
+  relations instead ("Positions" and "Absences" filtered by that id), the same shared-foreign-key
+  pattern as everything else here, rather than a link to a record that does not exist or an
+  invented standalone list.
 - **No DataIntegration resource uses a client library.** `Numo.DataIntegration.Configuration.Lib`'s
   real `IConfigurationClient` (25 methods, dumped by reflection, not read from documentation) has no
   list method for clients, pipelines, connectors, connections, client resources, pipeline resources,

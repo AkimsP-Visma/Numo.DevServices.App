@@ -18,12 +18,14 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
     private const string ResourceKey = "absences";
     private const string EmployeesResourceKey = "employees";
     private const string DepartmentsResourceKey = "departments";
+    private const string PositionsResourceKey = "positions";
 
     private const string EmployeeIdsFilterKey = "employeeIds";
     private const string DepartmentIdsFilterKey = "departmentIds";
     private const string FromFilterKey = "from";
     private const string TillFilterKey = "till";
     private const string StatusFilterKey = "status";
+    private const string LegalRelationIdFilterKey = "legalRelationId";
 
     // A column key is sent as OrderBy and a filter key as a filter parameter. They spell the
     // same thing here, but they are separate downstream contracts, so they are named apart.
@@ -69,6 +71,7 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
                 FilterKind.Enum,
                 FieldFormat.Options<AbsenceStatus>()),
             new FilterDescriptor(IncludeDeletedFilterKey, "Include deleted", FilterKind.Boolean, Options: null),
+            new FilterDescriptor(LegalRelationIdFilterKey, "Legal relation id", FilterKind.Guid, Options: null),
         ]);
 
     public Task<ResourcePage> GetPageAsync(ResourceQuery query, CancellationToken cancellationToken)
@@ -108,6 +111,7 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
             // with the whole table instead of nothing.
             Statuses = status is null ? null : new[] { status.Value },
             IncludeDeletedSince = ResourceQueryFilters.ReadIncludeDeletedSince(query, IncludeDeletedFilterKey),
+            LegalRelationId = ResourceQueryFilters.ReadGuid(query, LegalRelationIdFilterKey),
         };
 
         return DownstreamCall.InvokeResultAsync(
@@ -166,7 +170,19 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
                     Link: null),
                 new FieldValue("Deleted at", FieldFormat.Format(absence.DeletedAt), FieldKind.DateTime, Link: null),
             ],
-            []);
+            LegalRelationRelations(absence.LegalRelationId));
+
+    // Numo.Employee.Lib has no LegalRelation entity or client, only this bare id, shared with
+    // PositionDto - there is nothing to link to, but positions and absences can both be filtered by
+    // it, so it becomes two relations (a filtered grid of many) rather than a link or dead text.
+    private static IReadOnlyList<RelationDescriptor> LegalRelationRelations(Guid? legalRelationId)
+        => legalRelationId is null
+            ? []
+            :
+            [
+                RelationDescriptor.To("Positions", PositionsResourceKey, LegalRelationIdFilterKey, legalRelationId.Value.ToString()),
+                RelationDescriptor.To("Absences", ResourceKey, LegalRelationIdFilterKey, legalRelationId.Value.ToString()),
+            ];
 
     private static RecordLink EmployeeLink(AbsenceDto absence)
         => new(EmployeesResourceKey, absence.EmployeeId);
