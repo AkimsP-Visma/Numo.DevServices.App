@@ -1,28 +1,23 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { FieldValue, RelationDescriptor } from '../../api/service-data.model';
+import { FieldValue } from '../../api/service-data.model';
 
 /**
- * Every field the record carries, and a button per relation. A relation navigates to the list page
- * with its filter in the query string, so following one is an ordinary route change.
+ * Every field the record carries. Relations render separately, as
+ * app-related-records-panel - not here, since they fetch their own data and this stays a
+ * pure display component.
  */
 @Component({
   selector: 'app-generic-record-detail',
-  imports: [RouterLink, ButtonModule],
+  imports: [RouterLink],
   templateUrl: './generic-record-detail.html',
   styleUrl: './generic-record-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GenericRecordDetail {
   readonly fields = input.required<readonly FieldValue[]>();
-  readonly relations = input.required<readonly RelationDescriptor[]>();
 
   protected display(field: FieldValue): string {
     return field.value === null || field.value.length === 0 ? '-' : field.value;
-  }
-
-  protected relationQuery(relation: RelationDescriptor): Readonly<Record<string, string>> {
-    return relation.filters;
   }
 }

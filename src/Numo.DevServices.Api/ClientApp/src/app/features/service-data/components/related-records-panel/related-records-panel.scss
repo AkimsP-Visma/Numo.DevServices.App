@@ -1,0 +1,21 @@
+.related-records-panel {
+  margin: 0 0 1.5rem;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 0.5rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+
+  &__more {
+    margin: 0.5rem 0 0;
+    color: var(--p-text-muted-color);
+  }
+}

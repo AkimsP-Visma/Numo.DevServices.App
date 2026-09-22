@@ -73,14 +73,18 @@ export class ServiceDataPage {
 
   protected readonly sectionParam = computed(() => this.queryParams()?.get(SECTION_PARAM) ?? null);
 
-  /** Reachable-only-by-relation resources (connection credentials, certificates) never appear here:
-   * picking them any other way would defeat the point of gating them behind a relation button. */
+  /** A resource that cannot stand alone - reachable only by relation (connection credentials,
+   * certificates) or needing a parent id no picker filter can supply (di-client-resources and its
+   * siblings) - never appears here: opened directly it would show nothing, so it belongs only
+   * under its parent record, not as a tab. */
   protected readonly pickerResources = computed(() => {
     const section = this.sectionParam();
 
     return this.resources().filter(
       (resource) =>
-        !resource.isReachableOnlyByRelation && (!section || resource.section === section),
+        !resource.isReachableOnlyByRelation &&
+        !resource.filters.some((filter) => filter.isRequired) &&
+        (!section || resource.section === section),
     );
   });
 

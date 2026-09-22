@@ -16,17 +16,3 @@
     </dd>
   }
 </dl>
-
-@if (relations().length) {
-  <nav class="generic-record-detail__relations">
-    @for (relation of relations(); track relation.label) {
-      <a
-        class="generic-record-detail__relation"
-        [routerLink]="['/service-data', relation.targetResource]"
-        [queryParams]="relationQuery(relation)"
-      >
-        {{ relation.label }}
-      </a>
-    }
-  </nav>
-}

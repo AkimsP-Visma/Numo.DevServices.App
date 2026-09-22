@@ -18,12 +18,13 @@ import {
 import { ResourceDescriptor, ResourceRecord } from '../../api/service-data.model';
 import { ServiceDataApiService } from '../../api/service-data-api.service';
 import { GenericRecordDetail } from '../../components/generic-record-detail/generic-record-detail';
+import { RelatedRecordsPanel } from '../../components/related-records-panel/related-records-panel';
 import { TenantIdField } from '../../components/tenant-id-field/tenant-id-field';
 import { TenantIdStore } from '../../state/tenant-id.store';
 
 @Component({
   selector: 'app-service-data-record-page',
-  imports: [RouterLink, MessageModule, GenericRecordDetail, TenantIdField],
+  imports: [RouterLink, MessageModule, GenericRecordDetail, RelatedRecordsPanel, TenantIdField],
   templateUrl: './service-data-record-page.html',
   styleUrl: './service-data-record-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,6 +86,12 @@ export class ServiceDataRecordPage {
     });
 
     effect(() => this.load());
+  }
+
+  /** A relation names its target by key; the panel needs the target's descriptor (columns,
+   * isReachableOnlyByRelation) to render and to decide whether it may load automatically. */
+  protected descriptorFor(resourceKey: string): ResourceDescriptor | null {
+    return this.resources().find((resource) => resource.key === resourceKey) ?? null;
   }
 
   private load(): void {

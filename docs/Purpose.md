@@ -113,11 +113,20 @@ proves the pipeline end to end; it is not one of them.
   service nor its client needs a tenant header - both were verified anonymous.
 - **Neither DataIntegration route pages**, so its resources fetch the whole (small, configuration-
   sized) list once and slice it in memory, unlike the fetch-per-page rule above.
+- **A resource that cannot stand alone never appears in the picker tabs**, only under its parent
+  record: `IsReachableOnlyByRelation` resources and any resource with a required filter (a parent
+  id supplied only by a relation) are both excluded from `pickerResources` in
+  `service-data-page.ts`, opened directly they would show nothing. Every relation on a record
+  renders inline via `app-related-records-panel` instead of navigating to a separate page - an
+  ordinary nested resource (`di-client-resources` and its siblings) loads automatically, while an
+  `IsReachableOnlyByRelation` target stays behind a button that expands the list in place, so it is
+  still fetched only on demand. Each panel still links out to the full list page (still reachable by
+  URL, just not tabbed) for paging, sorting or filtering beyond the ten-row preview.
 - **Credentials, certificates and dataset records are shown, but never in a list.**
   `di-connection-credentials`, `di-connection-certificates` and `di-execution-step-dataset` are
-  reachable only via a relation button on their parent record
-  (`ResourceDescriptor.IsReachableOnlyByRelation`), fetched only when that button is pressed.
-  `di-connections` itself never sends the `expand` query parameter that would embed credentials or
+  reachable only via a relation on their parent record
+  (`ResourceDescriptor.IsReachableOnlyByRelation`), fetched only when their panel's button is
+  pressed. `di-connections` itself never sends the `expand` query parameter that would embed credentials or
   certificates into a list - its own DTO has no property for either, so even an unexpected
   expansion could not leak into a cell. A dataset's own fields have no fixed schema (they are
   whatever the source connector produced), so its detail record renders every field the record

@@ -23,7 +23,11 @@
   } @else if (errorMessage()) {
     <p-message severity="error" [text]="errorMessage()!" />
   } @else if (record(); as loaded) {
-    <app-generic-record-detail [fields]="loaded.fields" [relations]="loaded.relations" />
+    <app-generic-record-detail [fields]="loaded.fields" />
+
+    @for (relation of loaded.relations; track relation.label) {
+      <app-related-records-panel [relation]="relation" [descriptor]="descriptorFor(relation.targetResource)" />
+    }
   } @else if (isLoading()) {
     <p>Loading...</p>
   }

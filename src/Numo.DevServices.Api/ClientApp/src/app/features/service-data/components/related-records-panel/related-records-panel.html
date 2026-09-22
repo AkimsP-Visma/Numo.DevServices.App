@@ -1,0 +1,38 @@
+<section class="related-records-panel">
+  <header class="related-records-panel__header">
+    <h2>{{ relation().label }}</h2>
+
+    @if (descriptor()?.isReachableOnlyByRelation && !isExpanded()) {
+      <p-button label="Show {{ relation().label }}" severity="secondary" (onClick)="reveal()" />
+    } @else {
+      <a [routerLink]="['/service-data', relation().targetResource]" [queryParams]="relation().filters">
+        Open full list
+      </a>
+    }
+  </header>
+
+  @if (!descriptor()?.isReachableOnlyByRelation || isExpanded()) {
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()!" />
+    } @else if (descriptor(); as loadedDescriptor) {
+      @if (page(); as loaded) {
+        @if (loaded.notice) {
+          <p-message severity="warn" [text]="loaded.notice" />
+        }
+
+        <app-generic-record-table
+          [resourceKey]="relation().targetResource"
+          [columns]="loadedDescriptor.columns"
+          [rows]="loaded.rows"
+          [filters]="relation().filters"
+        />
+
+        @if (loaded.hasMore) {
+          <p class="related-records-panel__more">More records exist - open the full list to see them.</p>
+        }
+      } @else if (isLoading()) {
+        <p>Loading...</p>
+      }
+    }
+  }
+</section>
