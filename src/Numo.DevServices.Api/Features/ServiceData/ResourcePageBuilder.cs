@@ -42,4 +42,25 @@ internal static class ResourcePageBuilder
             fetchPageAsync,
             items => Task.FromResult<IReadOnlyList<ResourceRow>>(items.Select(toRow).ToList()),
             notice);
+
+    /// <summary>
+    /// For a source with no paging parameters at all - every DataIntegration resource. The whole
+    /// (already filtered and sorted) set is fetched once and sliced in memory, which is only honest
+    /// because these sets are configuration-sized: a handful of clients, pipelines and connectors,
+    /// not the 1300+ rows that made a downstream fetch-per-page the only correct answer for Person
+    /// and Employee data. <paramref name="fetchAllAsync"/> must apply the query's own filters, since
+    /// nothing here can - by the time a list reaches this method there is no query left to send.
+    /// </summary>
+    public static async Task<ResourcePage> BuildUnpagedAsync<TItem>(
+        ResourceQuery query,
+        Func<Task<IEnumerable<TItem>>> fetchAllAsync,
+        Func<TItem, ResourceRow> toRow,
+        string? notice = null)
+    {
+        var all = (await fetchAllAsync()).ToList();
+        var pageItems = all.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToList();
+        var hasMore = query.Page * query.PageSize < all.Count;
+
+        return new ResourcePage(pageItems.Select(toRow).ToList(), query.Page, query.PageSize, hasMore, notice);
+    }
 }

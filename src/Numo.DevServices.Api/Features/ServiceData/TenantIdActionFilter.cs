@@ -7,10 +7,22 @@ namespace Numo.DevServices.Api.Features.ServiceData;
 /// Puts the caller's tenant id into the ambient tenant so the Numo client libraries send it
 /// downstream. Attached to this slice's controller only: no other slice talks to those services.
 /// </summary>
-internal sealed class TenantIdActionFilter(INumoTenantSetterService tenantSetter) : IActionFilter
+internal sealed class TenantIdActionFilter(
+    INumoTenantSetterService tenantSetter,
+    ServiceDataCatalogue catalogue) : IActionFilter
 {
     public void OnActionExecuting(ActionExecutingContext context)
     {
+        // DataIntegration resources need no tenant at all. An unknown resource key still reaches
+        // here - it is rejected by the handler as UnknownResource, not by this filter.
+        var resourceKey = context.ActionArguments.TryGetValue("resource", out var value) ? value as string : null;
+        var resource = resourceKey is null ? null : catalogue.Find(resourceKey);
+
+        if (resource is not null && !resource.Descriptor.RequiresTenant)
+        {
+            return;
+        }
+
         var headerValue = context.HttpContext.Request.Headers[ServiceDataRegistration.TenantIdHeaderName].ToString();
 
         // Short-circuited rather than defaulted: without a tenant the downstream call would either

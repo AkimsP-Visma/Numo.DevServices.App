@@ -12,6 +12,13 @@ public interface IServiceDataResource
 
     Task<ResourcePage> GetPageAsync(ResourceQuery query, CancellationToken cancellationToken);
 
+    /// <param name="filters">The caller's currently active filters, keyed by
+    /// <see cref="FilterDescriptor.Key"/>. Every flat resource ignores this: it exists so a nested
+    /// resource's detail route can read the parent id its route needs (di-client-resources and its
+    /// siblings), which the bare id alone cannot carry.</param>
     /// <returns>Null when the service has no record with that id.</returns>
-    Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken);
 }

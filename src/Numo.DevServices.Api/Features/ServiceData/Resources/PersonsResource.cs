@@ -26,6 +26,7 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
         ResourceKey,
         "Persons",
         "Numo.Person.Api",
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("firstName", "First name", FieldKind.Text, IsSortable: true),
             new ColumnDescriptor("lastName", "Last name", FieldKind.Text, IsSortable: true),
@@ -48,7 +49,10 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
             (page, pageSize) => FetchPageAsync(query, page, pageSize),
             ToRow);
 
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var person = await DownstreamCall.FindAsync<PersonDto, PersonNotFoundException>(
             () => personClient.GetPerson(id),
@@ -125,7 +129,7 @@ public sealed class PersonsResource(IPersonClient personClient) : IServiceDataRe
                 new FieldValue("Deleted at", FieldFormat.Format(person.DeletedAt), FieldKind.DateTime, Link: null),
             ],
             [
-                new RelationDescriptor("Employees", "employees", "personId", person.Id.ToString()),
+                RelationDescriptor.To("Employees", "employees", "personId", person.Id.ToString()),
             ]);
 
     private static string Title(PersonDto person)

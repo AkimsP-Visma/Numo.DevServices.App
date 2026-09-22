@@ -61,6 +61,7 @@ public sealed class PositionsResource(
         ResourceKey,
         "Positions",
         "Numo.Employee.Api",
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("personName", "Person", FieldKind.Text, IsSortable: false),
             new ColumnDescriptor("employeeCode", "Employee", FieldKind.Text, IsSortable: false),
@@ -109,7 +110,10 @@ public sealed class PositionsResource(
     /// and job title, then the employee's person for a name. The department and job title do not
     /// depend on the employee, so the three run together and only the person waits.
     /// </summary>
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var position = await DownstreamCall.FindResultAsync(
             () => positionClient.GetPosition(id),

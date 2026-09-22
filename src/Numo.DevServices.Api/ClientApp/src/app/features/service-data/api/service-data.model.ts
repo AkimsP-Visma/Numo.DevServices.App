@@ -4,6 +4,9 @@ export type FieldKind = 'Text' | 'Guid' | 'Date' | 'DateTime' | 'Number' | 'Bool
 
 export type FilterKind = 'Text' | 'Guid' | 'Date' | 'Boolean' | 'Enum' | 'GuidList';
 
+/** Which nav entry's picker offers a resource, declared per resource rather than inferred. */
+export type ResourceSection = 'Personnel' | 'DataIntegration';
+
 export interface ColumnDescriptor {
   readonly key: string;
   readonly label: string;
@@ -17,14 +20,22 @@ export interface FilterDescriptor {
   readonly label: string;
   readonly kind: FilterKind;
   readonly options: readonly string[] | null;
+  /** A nested resource's parent-id filter: the request 400s without it, so the page must not fire
+   * one until this is set - typically reachable only by following a relation link. */
+  readonly isRequired: boolean;
 }
 
 export interface ResourceDescriptor {
   readonly key: string;
   readonly label: string;
   readonly serviceName: string;
+  readonly section: ResourceSection;
   readonly columns: readonly ColumnDescriptor[];
   readonly filters: readonly FilterDescriptor[];
+  readonly requiresTenant: boolean;
+  /** Reachable only via a RelationDescriptor from another record - e.g. connection credentials.
+   * Hidden from the resource picker. */
+  readonly isReachableOnlyByRelation: boolean;
 }
 
 export interface RecordLink {
@@ -63,8 +74,9 @@ export interface FieldValue {
 export interface RelationDescriptor {
   readonly label: string;
   readonly targetResource: string;
-  readonly filterKey: string;
-  readonly filterValue: string;
+  /** One entry for nearly every relation, two for di-execution-step-dataset (executionId and
+   * stepId). Same shape as PageRequest.filters - a relation is just a pre-filled filter set. */
+  readonly filters: Readonly<Record<string, string>>;
 }
 
 export interface ResourceRecord {

@@ -18,8 +18,13 @@ service win over anything else.
    copy-out format is the point of the feature, not a nicety. *Listing is built* -
    `Features/FeatureFlags/` plus the `/feature-flags` page; the copy-out is not.
 3. **Service data browsing.** Lists of records, and a single-record view for a chosen row. *Built* -
-   `Features/ServiceData/` plus the `/service-data` pages, over seven resources of the Person and
-   Employee services.
+   `Features/ServiceData/` plus the `/service-data` pages, over seven Personnel resources (Person
+   and Employee services) and eleven DataIntegration resources (the Configuration API's clients,
+   pipelines, connections, connectors, client resources, pipeline resources, pipeline executions
+   and execution steps, plus connection credentials, connection certificates and an execution
+   step's dataset - the last three reachable only via a relation button, never listed). One
+   backend slice serves two frontend nav entries, "Personnel Browser" and "DataIntegration
+   Browser" - see `ResourceDescriptor.Section`.
 4. **Service status dashboard.** Whether every service under the `Services` configuration section
    answers its ping endpoint, refreshed while the page is open. *Built* - `Features/ServiceHealth/`
    plus the `/service-health` page.
@@ -97,7 +102,38 @@ proves the pipeline end to end; it is not one of them.
   names with one batched `IPersonClient` call per page, capped because the client library switches
   to a `POST {endpoint}/search` above 1000 characters of query string and
   `/api/positions/view/search` does not exist at all.
-- **`department-roles` is the one resource with no client library.** `DepartmentRoleDto` is
+- **No DataIntegration resource uses a client library.** `Numo.DataIntegration.Configuration.Lib`'s
+  real `IConfigurationClient` (25 methods, dumped by reflection, not read from documentation) has no
+  list method for clients, pipelines, connectors, connections, client resources, pipeline resources,
+  pipeline executions or execution steps, and no by-id method for the nested certificates or
+  credentials routes - it is built for point lookups by name, not for browsing. So every
+  DataIntegration resource reads the Configuration API directly over one shared hand-rolled
+  `HttpClient` (`Resources/DataIntegrationConfigurationApi.cs`); `Numo.DataIntegration.Connectors.Lib`
+  is not referenced at all, since none of the chosen resources need the Connectors API. Neither the
+  service nor its client needs a tenant header - both were verified anonymous.
+- **Neither DataIntegration route pages**, so its resources fetch the whole (small, configuration-
+  sized) list once and slice it in memory, unlike the fetch-per-page rule above.
+- **Credentials, certificates and dataset records are shown, but never in a list.**
+  `di-connection-credentials`, `di-connection-certificates` and `di-execution-step-dataset` are
+  reachable only via a relation button on their parent record
+  (`ResourceDescriptor.IsReachableOnlyByRelation`), fetched only when that button is pressed.
+  `di-connections` itself never sends the `expand` query parameter that would embed credentials or
+  certificates into a list - its own DTO has no property for either, so even an unexpected
+  expansion could not leak into a cell. A dataset's own fields have no fixed schema (they are
+  whatever the source connector produced), so its detail record renders every field the record
+  carries rather than declaring columns in advance. `connector-key` and `numo-key` are confirmed
+  non-secret identifiers and would be shown as ordinary fields if a later pass adds the extra
+  fan-out call they need.
+- **A dataset's own paging is continuation-token based, not page-index**, unlike every other route
+  in this slice. `di-execution-step-dataset` fetches one batch and stops rather than pretending to
+  support Previous/Next it cannot honour; `ResourcePage.Notice` says so when the service's own token
+  shows more records exist.
+- **`RelationDescriptor` carries a `Filters` dictionary**, the same shape `ResourceQuery.Filters`
+  already uses - one entry for nearly every relation, two for `di-execution-step-dataset`
+  (`executionId` and `stepId`, the one target that needs two parent ids at once).
+  `RelationDescriptor.To(label, target, key, value)` is a convenience constructor for the common
+  one-filter case, not a second field or a second way to represent a relation.
+- **`department-roles` is the one Personnel resource with no client library.** `DepartmentRoleDto` is
   internal in `Numo.Employee.Lib` and no client method exposes the unfiltered route, so that
   resource owns an `HttpClient`, a local record, the response envelope and its own tenant header. It
   is the exception, commented as such in the file, and parsing the envelope itself buys it the one

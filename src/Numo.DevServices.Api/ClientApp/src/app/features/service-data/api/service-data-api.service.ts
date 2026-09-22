@@ -46,13 +46,25 @@ export class ServiceDataApiService {
     });
   }
 
-  getRecord(resource: string, id: string): Observable<ResourceRecord> {
-    return this.http.get<ResourceRecord>(
-      `${this.resourceUrl(resource)}/${encodeURIComponent(id)}`,
-      {
-        headers: this.tenantHeaders(),
-      },
-    );
+  /** filters: most resources ignore them; a nested resource's detail route needs the parent id
+   * one of them carries, so the record page forwards whatever filters were active on its grid. */
+  getRecord(
+    resource: string,
+    id: string,
+    filters: Readonly<Record<string, string>> = {},
+  ): Observable<ResourceRecord> {
+    let params = new HttpParams();
+
+    for (const [key, value] of Object.entries(filters)) {
+      if (value.length > 0) {
+        params = params.set(`filters[${key}]`, value);
+      }
+    }
+
+    return this.http.get<ResourceRecord>(`${this.resourceUrl(resource)}/${encodeURIComponent(id)}`, {
+      params,
+      headers: this.tenantHeaders(),
+    });
   }
 
   private resourceUrl(resource: string): string {

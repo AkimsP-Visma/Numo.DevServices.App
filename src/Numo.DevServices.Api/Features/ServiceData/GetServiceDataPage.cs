@@ -34,6 +34,38 @@ internal static class DeclaredKey
 
     public static bool IsSame(string left, string? right)
         => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Shared by the page and record validators, so a value malformed for its kind is
+    /// rejected the same way regardless of which route it arrived on.</summary>
+    public static bool IsValueWellFormed(FilterDescriptor filter, string value)
+        => filter.Kind switch
+        {
+            FilterKind.Guid => Guid.TryParse(value, out _),
+            FilterKind.Date => DateOnly.TryParse(value, CultureInfo.InvariantCulture, out _),
+            FilterKind.Boolean => bool.TryParse(value, out _),
+            FilterKind.Enum => filter.Options is not null
+                && filter.Options.Any(option => IsSame(option, value)),
+            FilterKind.GuidList => IsGuidListWellFormed(value),
+            _ => true,
+        };
+
+    /// <summary>
+    /// The count is checked here and not in the resource so that an overlong list is a stated 400
+    /// rather than a downstream request the client library silently turns into a POST search.
+    ///
+    /// An all-zero GUID is rejected for the same reason the reader discards it: the services ignore
+    /// an empty id array, so a list of nothing but zeroes would otherwise reach a service as no
+    /// filter at all and answer with the whole table. A list that splits to nothing is rejected on
+    /// the same ground.
+    /// </summary>
+    private static bool IsGuidListWellFormed(string value)
+    {
+        var parts = ResourceQueryFilters.SplitList(value);
+
+        return parts.Length > 0
+            && parts.Length <= ResourceQueryFilters.MaxListValues
+            && parts.All(part => Guid.TryParse(part, out var id) && id != Guid.Empty);
+    }
 }
 
 /// <summary>
@@ -108,41 +140,22 @@ public sealed class GetServiceDataPageValidator : AbstractValidator<GetServiceDa
                 continue;
             }
 
-            if (!IsValueWellFormed(filter, value))
+            if (!DeclaredKey.IsValueWellFormed(filter, value))
             {
                 context.AddFailure($"Filter '{filter.Key}' of resource '{descriptor.Key}' cannot take '{value}'.");
             }
         }
-    }
 
-    private static bool IsValueWellFormed(FilterDescriptor filter, string value)
-        => filter.Kind switch
+        // A nested resource (di-client-resources and its siblings) cannot be browsed without the
+        // parent id its route needs, so a request missing it is a 400 rather than a downstream 404.
+        foreach (var requiredFilter in descriptor.Filters.Where(filter => filter.IsRequired))
         {
-            FilterKind.Guid => System.Guid.TryParse(value, out _),
-            FilterKind.Date => DateOnly.TryParse(value, CultureInfo.InvariantCulture, out _),
-            FilterKind.Boolean => bool.TryParse(value, out _),
-            FilterKind.Enum => filter.Options is not null
-                && filter.Options.Any(option => DeclaredKey.IsSame(option, value)),
-            FilterKind.GuidList => IsGuidListWellFormed(value),
-            _ => true,
-        };
-
-    /// <summary>
-    /// The count is checked here and not in the resource so that an overlong list is a stated 400
-    /// rather than a downstream request the client library silently turns into a POST search.
-    ///
-    /// An all-zero GUID is rejected for the same reason the reader discards it: the services ignore
-    /// an empty id array, so a list of nothing but zeroes would otherwise reach a service as no
-    /// filter at all and answer with the whole table. A list that splits to nothing is rejected on
-    /// the same ground.
-    /// </summary>
-    private static bool IsGuidListWellFormed(string value)
-    {
-        var parts = ResourceQueryFilters.SplitList(value);
-
-        return parts.Length > 0
-            && parts.Length <= ResourceQueryFilters.MaxListValues
-            && parts.All(part => System.Guid.TryParse(part, out var id) && id != System.Guid.Empty);
+            if (!filters.ContainsKey(requiredFilter.Key))
+            {
+                context.AddFailure(
+                    $"Resource '{descriptor.Key}' requires filter '{requiredFilter.Key}' to be set.");
+            }
+        }
     }
 }
 

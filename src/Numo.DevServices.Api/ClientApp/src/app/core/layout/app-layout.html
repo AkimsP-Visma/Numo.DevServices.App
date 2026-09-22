@@ -5,8 +5,14 @@
 
   <div class="app-layout__body">
     <nav class="app-layout__nav">
-      @for (item of navigationItems; track item.route) {
-        <a [routerLink]="item.route" routerLinkActive="app-layout__nav-link--active" class="app-layout__nav-link">
+      @for (item of navigationItems; track item.label) {
+        <a
+          [routerLink]="item.route"
+          [queryParams]="item.queryParams ?? null"
+          [routerLinkActiveOptions]="{ exact: true, matrixParams: 'ignored', queryParams: item.queryParams ? 'exact' : 'ignored', fragment: 'ignored' }"
+          routerLinkActive="app-layout__nav-link--active"
+          class="app-layout__nav-link"
+        >
           {{ item.label }}
         </a>
       }

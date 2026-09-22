@@ -20,6 +20,7 @@ public sealed class JobTitlesResource(IJobTitleClient jobTitleClient) : IService
         ResourceKey,
         "Job titles",
         "Numo.Employee.Api",
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("name", "Name", FieldKind.Text, IsSortable: true),
         ],
@@ -33,7 +34,10 @@ public sealed class JobTitlesResource(IJobTitleClient jobTitleClient) : IService
             (page, pageSize) => FetchPageAsync(query, page, pageSize),
             ToRow);
 
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var jobTitle = await DownstreamCall.FindResultAsync(
             () => jobTitleClient.GetJobTitle(id),

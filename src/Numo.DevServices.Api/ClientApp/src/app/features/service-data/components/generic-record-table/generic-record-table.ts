@@ -27,6 +27,11 @@ export class GenericRecordTable {
   readonly sortColumn = input<string | null>(null);
   readonly isSortDescending = input(false);
 
+  /** Carried on the Open link only, not on cross-resource cell links: a nested resource's own
+   * detail route needs the parent id one of these carries, and a cell link only ever points at a
+   * flat resource (see the backend's ResourceDescriptor/RecordLink convention). */
+  readonly filters = input<Readonly<Record<string, string>>>({});
+
   readonly sortRequested = output<SortRequest>();
 
   protected toggleSort(column: ColumnDescriptor): void {

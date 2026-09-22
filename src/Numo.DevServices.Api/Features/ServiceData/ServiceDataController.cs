@@ -35,13 +35,17 @@ public sealed class ServiceDataController(INumoMediator mediator) : ControllerBa
                 ReadFilters(Request.Query)),
             cancellationToken);
 
+    /// <summary>Filters arrive the same way as <see cref="GetPage"/> does: most resources ignore
+    /// them, but a nested resource's detail route needs the parent id one of them carries.</summary>
     [HttpGet("{resource}/{id:guid}")]
     [TypeFilter(typeof(TenantIdActionFilter))]
     public Task<NumoResult<ResourceRecord>> GetRecord(
         string resource,
         Guid id,
         CancellationToken cancellationToken)
-        => mediator.SendAsync<ResourceRecord>(new GetServiceDataRecordQuery(resource, id), cancellationToken);
+        => mediator.SendAsync<ResourceRecord>(
+            new GetServiceDataRecordQuery(resource, id, ReadFilters(Request.Query)),
+            cancellationToken);
 
     /// <summary>
     /// Read by hand rather than model-bound: given no <c>filters[...]</c> key at all, the dictionary

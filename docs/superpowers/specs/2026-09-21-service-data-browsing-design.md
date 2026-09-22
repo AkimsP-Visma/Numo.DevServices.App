@@ -328,3 +328,100 @@ PrimeNG paginator (needs a total it cannot have).
 
 Writes of any kind. Authentication. Entity-level tenancy in this app's own database, which stays absent.
 Resources beyond the seven above. The `positions/view` embedded objects on a detail page.
+
+## Extension: DataIntegration Browser (2026-09-22)
+
+Extended the same slice to `Numo.DataIntegration.Configuration.Api`, ten more resources, over one
+backend slice and two frontend nav entries. Full detail is in
+`.superpowers/handoff/HANDOFF-dataintegration.md`; this section only records the four decisions
+that changed the contract and what verification found.
+
+**Two sections, one route prefix.** `ResourceDescriptor` gained `Section` (`Personnel` |
+`DataIntegration`), `RequiresTenant` (default true) and `IsReachableOnlyByRelation` (default
+false). The picker filters by a `section` query parameter that two nav entries ("Personnel
+Browser", "DataIntegration Browser") set; a cell or relation link can still cross sections because
+there is only one route (`/service-data/:resource`), never a lookup of which prefix a target lives
+under.
+
+**No client library fits browsing.** `IConfigurationClient`'s real 25 methods (dumped by
+reflection, not read from documentation - saved in
+`.superpowers/handoff/dataintegration-client-signatures.md`) have no list method for clients,
+pipelines, connectors, connections, client resources, pipeline resources, pipeline executions or
+execution steps, and no by-id method for the nested certificates or credentials routes. So every
+DataIntegration resource reads the Configuration API directly over one shared hand-rolled
+`HttpClient` (`Resources/DataIntegrationConfigurationApi.cs`), verified live to answer with plain
+JSON and no tenant header. `Numo.DataIntegration.Connectors.Lib` and
+`Numo.DataIntegration.Configuration.Lib` are not referenced at all.
+
+**Unpaged sources get a second builder path.** Neither DataIntegration route pages, so
+`ResourcePageBuilder.BuildUnpagedAsync` fetches the whole (configuration-sized) list once and
+slices it in memory - honest here because the sets are small, unlike Person/Employee data.
+
+**A nested resource's detail route needs a parent id the bare `(resource, id)` contract could not
+carry.** `GetServiceDataRecordQuery`/`IServiceDataResource.GetByIdAsync`/the frontend's `getRecord`
+and its "Open" link all gained a `filters` parameter carrying the currently active filters, so
+`di-client-resources` and its siblings can read `clientId` etc. on the detail path too. Every
+Personnel resource ignores it. `FilterDescriptor.IsRequired` marks a nested resource's parent-id
+filter, enforced by the page validator; the record route deliberately does not enforce it uniformly
+(`di-pipeline-executions` lists nested but its detail route is flat), so a resource whose detail
+genuinely needs the parent id reports `ServiceDataErrors.RequiredFilterMissing` itself rather than
+throwing a bare exception - the first implementation of this skipped that and produced an unhandled
+500 with a leaked stack trace, caught by live verification.
+
+**Credentials and certificates: nested resource behind a relation, never in a list.**
+`di-connection-credentials` and `di-connection-certificates` declare `IsReachableOnlyByRelation`,
+hiding them from the picker; `di-connections` never sends `expand` and its own DTO has no
+credentials/certificates property, so even an unexpected expansion cannot reach a cell. Verified
+live: `expand=certificates` on `/api/connections/{id}` does add the array (mechanism confirmed; no
+connection in the test tenant actually carries a certificate, so the field shape is inferred from
+the OpenAPI schema, not observed). `connector-key`/`numo-key` are confirmed non-secret identifiers
+but are not surfaced yet - both need a connector lookup one call deeper than a bare client-resource
+row carries, deferred rather than built speculatively.
+
+**Enums with no available names render as numbers.** `PipelineExecutionState`,
+`PipelineExecutionResult` and `PipelineExecutionStepStatus` cross the wire as bare integers; no
+name mapping exists in the OpenAPI spec (no `x-enumNames`) and the client library that has the real
+enum types is not referenced. `FieldKind.Number` and dropping the `state` filter (rather than
+guessing option names) was judged more honest than a fabricated enum.
+
+**Verified live against test.numo.lv, VPN on:** `organizationId` is genuinely optional on
+`/api/connections` (200 with every connection); `/api/pipeline-executions/{executionId}` answers a
+bare object despite the spec typing it as an array; `expand=certificates` and the comma-joined
+`expand=credentials,certificates` both work as guessed.
+
+## Extension: execution step dataset (2026-09-22)
+
+Added `di-execution-step-dataset` over
+`/api/pipeline-executions/{executionId}/steps/{stepId}/dataset`, reachable only via a "Dataset"
+relation on a `di-execution-steps` record.
+
+**This route carries real personal data, unlike the rest of the DataIntegration section.** A live
+probe during this addition pulled a real batch from an HR/absence pipeline's step and found fields
+like `ERS_PK_PERSSH`, `ABS_DAT_FROM`, `ABS_DAT_TO` - person-linked absence records, not
+configuration. The "no personal data in either service" simplification recorded earlier in this
+document does not hold for dataset content, which is whatever the pipeline extracts. Decided: treat
+it like credentials and certificates rather than skip it or invent new gating -
+`IsReachableOnlyByRelation`, never listed, fetched only on demand - and name it in
+`docs/Architecture.md` as a second, independent reason this slice needs `[Authorize]`.
+
+**Continuation-token paging does not fit `ResourcePageBuilder`.** The route pages by an opaque
+token (`continuationToken` + `pageSize`), not by index, so there is no way to request "page 3" and
+nowhere in `ResourceQuery` to carry a token between requests. The resource fetches one batch and
+stops: `ResourcePage.HasMore` is always false, and `Notice` says more records exist when the
+service's own token is non-null, rather than the grid offering a Next it cannot honour.
+
+**A dataset record has no fixed schema**, so its fields cannot become `ColumnDescriptor`s (declared
+once for every row in a resource). The grid shows only `state`; the detail record renders every key
+in the record's `data` dictionary as its own `FieldValue`, which needs no static shape since it is
+built per record already. There is no by-id route for a single dataset record, so `GetByIdAsync`
+re-fetches the same deterministic first batch and searches it - correct for exactly the records the
+grid already shows, and admittedly not for anything past that batch.
+
+**`RelationDescriptor` was reshaped from a single `FilterKey`/`FilterValue` pair to a `Filters`
+dictionary**, the same shape `ResourceQuery.Filters` already uses. The single-pair version could
+not express `di-execution-step-dataset`'s two parent ids (`executionId` and `stepId`) at once; the
+first fix for that added a second, optional `AdditionalFilters` dictionary alongside the pair, but
+that meant two mechanisms for one job - a caller could in principle set a key in both. Replaced
+with one `Filters` dictionary and a `RelationDescriptor.To(label, target, key, value)` convenience
+constructor for the common one-filter case, which is construction-time sugar, not a second field.
+Every call site across both sections was updated; none of their behaviour changed.

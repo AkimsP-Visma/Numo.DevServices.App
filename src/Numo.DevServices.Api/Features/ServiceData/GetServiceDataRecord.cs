@@ -1,13 +1,53 @@
 namespace Numo.DevServices.Api.Features.ServiceData;
 
-public sealed record GetServiceDataRecordQuery(string Resource, Guid Id);
+/// <param name="Filters">The caller's currently active filters. Most resources ignore them; a
+/// nested resource's detail route needs the parent id one of them carries.</param>
+public sealed record GetServiceDataRecordQuery(
+    string Resource,
+    Guid Id,
+    IReadOnlyDictionary<string, string> Filters);
 
+/// <summary>Rejects a filter the resource did not declare or a value malformed for its kind, the
+/// same rules <see cref="GetServiceDataPageValidator"/> applies. Does not enforce
+/// <see cref="FilterDescriptor.IsRequired"/> here: unlike the page route, a required filter is not
+/// uniformly needed by every resource's detail fetch - di-pipeline-executions is nested for its
+/// list but flat for its detail, so pipelineId is required to browse it but not to open one record.
+/// A resource whose detail genuinely needs its parent id enforces that itself and fails with
+/// <see cref="ServiceDataErrors.RequiredFilterMissing"/>, not a bare exception: verified live during
+/// this feature's build, a missing required filter without that surfaced as an unhandled 500 with a
+/// leaked stack trace.</summary>
 public sealed class GetServiceDataRecordValidator : AbstractValidator<GetServiceDataRecordQuery>
 {
-    public GetServiceDataRecordValidator()
+    public GetServiceDataRecordValidator(ServiceDataCatalogue catalogue)
     {
         RuleFor(query => query.Resource).NotEmpty();
         RuleFor(query => query.Id).NotEmpty();
+
+        RuleFor(query => query.Filters).Custom((filters, context) =>
+        {
+            var descriptor = catalogue.Find(context.InstanceToValidate.Resource)?.Descriptor;
+
+            if (descriptor is null)
+            {
+                return;
+            }
+
+            foreach (var (key, value) in filters)
+            {
+                var filter = DeclaredKey.FindFilter(descriptor, key);
+
+                if (filter is null)
+                {
+                    context.AddFailure($"Resource '{descriptor.Key}' has no filter '{key}'.");
+                    continue;
+                }
+
+                if (!DeclaredKey.IsValueWellFormed(filter, value))
+                {
+                    context.AddFailure($"Filter '{filter.Key}' of resource '{descriptor.Key}' cannot take '{value}'.");
+                }
+            }
+        });
     }
 }
 
@@ -32,7 +72,7 @@ public sealed class GetServiceDataRecordHandler(
 
         try
         {
-            var record = await resource.GetByIdAsync(query.Id, cancellationToken);
+            var record = await resource.GetByIdAsync(query.Id, query.Filters, cancellationToken);
 
             return record is null
                 ? NumoResult.Fail<ResourceRecord>(ServiceDataErrors.RecordNotFound(resource.Descriptor.Key, query.Id))

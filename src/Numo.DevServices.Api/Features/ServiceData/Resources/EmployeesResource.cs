@@ -40,6 +40,7 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
         ResourceKey,
         "Employees",
         "Numo.Employee.Api",
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("personName", "Person", FieldKind.Text, IsSortable: false),
             new ColumnDescriptor(PersonIdColumnKey, "Person id", FieldKind.Guid, IsSortable: false),
@@ -65,7 +66,10 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
             restriction.Notice);
     }
 
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var employee = await DownstreamCall.FindResultAsync(
             () => employeeClient.GetEmployee(id),
@@ -178,9 +182,9 @@ public sealed class EmployeesResource(IEmployeeClient employeeClient, PersonName
                 new FieldValue("Deleted at", FieldFormat.Format(employee.DeletedAt), FieldKind.DateTime, Link: null),
             ],
             [
-                new RelationDescriptor("Positions", "positions", "employeeIds", employee.Id.ToString()),
-                new RelationDescriptor("Absences", "absences", "employeeIds", employee.Id.ToString()),
-                new RelationDescriptor("Department roles", "department-roles", "employeeId", employee.Id.ToString()),
+                RelationDescriptor.To("Positions", "positions", "employeeIds", employee.Id.ToString()),
+                RelationDescriptor.To("Absences", "absences", "employeeIds", employee.Id.ToString()),
+                RelationDescriptor.To("Department roles", "department-roles", "employeeId", employee.Id.ToString()),
             ]);
 
     private static RecordLink PersonLink(EmployeeDto employee)

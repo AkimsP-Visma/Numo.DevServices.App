@@ -59,6 +59,7 @@ public sealed class DepartmentRolesResource(
         ResourceKey,
         "Department roles",
         ServiceName,
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("departmentId", "Department id", FieldKind.Guid, IsSortable: false),
             new ColumnDescriptor("employeeId", "Employee id", FieldKind.Guid, IsSortable: false),
@@ -84,7 +85,10 @@ public sealed class DepartmentRolesResource(
             (page, pageSize) => FetchPageAsync(query, page, pageSize, cancellationToken),
             ToRow);
 
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var callDescription = $"{ResourceKey} record";
 

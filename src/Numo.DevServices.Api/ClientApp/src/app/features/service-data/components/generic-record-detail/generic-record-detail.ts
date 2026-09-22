@@ -22,7 +22,7 @@ export class GenericRecordDetail {
     return field.value === null || field.value.length === 0 ? '-' : field.value;
   }
 
-  protected relationQuery(relation: RelationDescriptor): Record<string, string> {
-    return { [relation.filterKey]: relation.filterValue };
+  protected relationQuery(relation: RelationDescriptor): Readonly<Record<string, string>> {
+    return relation.filters;
   }
 }

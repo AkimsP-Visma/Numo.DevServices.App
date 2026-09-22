@@ -38,6 +38,7 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
         ResourceKey,
         "Absences",
         "Numo.Employee.Api",
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("employeeId", "Employee id", FieldKind.Guid, IsSortable: false),
             new ColumnDescriptor("departmentId", "Department id", FieldKind.Guid, IsSortable: false),
@@ -76,7 +77,10 @@ public sealed class AbsencesResource(IAbsenceClient absenceClient) : IServiceDat
             (page, pageSize) => FetchPageAsync(query, page, pageSize),
             ToRow);
 
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var absence = await DownstreamCall.FindResultAsync(
             () => absenceClient.GetAbsence(id),

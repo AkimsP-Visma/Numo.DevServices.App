@@ -108,6 +108,16 @@ hosting for the built bundle is still to be decided.
   network; that risk arrives through this slice by the data path rather than the path path, so the
   decision is recorded here rather than left implicit.
 
+  The DataIntegration resources added later to the same slice carry no personal data and need no
+  tenant header at all, so they do not add to that specific risk - except for three resources that
+  read real, sensitive payloads rather than configuration: `di-connection-credentials` and
+  `di-connection-certificates` (plaintext credential values, certificate material), and
+  `di-execution-step-dataset` (the actual records a pipeline moved - confirmed live to include
+  HR/absence data tied to individual people for at least one real pipeline, which is exactly the
+  kind of personal data the tenant-header risk above is about, arriving by a different route). All
+  three are reachable only via a relation button, never listed, and fetched only on demand, which
+  is the mitigation available today; `[Authorize]` closes the actual gap.
+
 - **A dependency hazard worth knowing about.** The `positions` detail page fans out concurrently,
   and the tenant override reaching those parallel calls depends on `AddNumoTenantSetter` storing it
   in an `AsyncLocal`, which flows into child tasks. That is `AsyncLocal`'s own documented behaviour,

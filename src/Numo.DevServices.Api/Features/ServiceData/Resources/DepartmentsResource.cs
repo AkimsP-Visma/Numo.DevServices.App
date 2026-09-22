@@ -44,6 +44,7 @@ public sealed class DepartmentsResource(IDepartmentClient departmentClient) : IS
         ResourceKey,
         "Departments",
         "Numo.Employee.Api",
+        ResourceSection.Personnel,
         [
             new ColumnDescriptor("name", "Name", FieldKind.Text, IsSortable: true),
             new ColumnDescriptor("parentId", "Parent id", FieldKind.Guid, IsSortable: false),
@@ -62,7 +63,10 @@ public sealed class DepartmentsResource(IDepartmentClient departmentClient) : IS
             (page, pageSize) => FetchPageAsync(query, page, pageSize),
             ToRow);
 
-    public async Task<ResourceRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ResourceRecord?> GetByIdAsync(
+        Guid id,
+        IReadOnlyDictionary<string, string> filters,
+        CancellationToken cancellationToken)
     {
         var department = await DownstreamCall.FindResultAsync(
             () => departmentClient.GetDepartment(id),
@@ -141,9 +145,9 @@ public sealed class DepartmentsResource(IDepartmentClient departmentClient) : IS
                 .. ChildFields(children),
             ],
             [
-                new RelationDescriptor("Positions", PositionsResourceKey, "departmentIds", department.Id.ToString()),
-                new RelationDescriptor("Absences", AbsencesResourceKey, "departmentIds", department.Id.ToString()),
-                new RelationDescriptor(
+                RelationDescriptor.To("Positions", PositionsResourceKey, "departmentIds", department.Id.ToString()),
+                RelationDescriptor.To("Absences", AbsencesResourceKey, "departmentIds", department.Id.ToString()),
+                RelationDescriptor.To(
                     "Department roles",
                     DepartmentRolesResourceKey,
                     "departmentId",

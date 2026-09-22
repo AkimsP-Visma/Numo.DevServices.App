@@ -20,7 +20,7 @@
   <ng-template #body let-row>
     <tr>
       <td class="generic-record-table__open">
-        <a [routerLink]="['/service-data', resourceKey(), row.id]">Open</a>
+        <a [routerLink]="['/service-data', resourceKey(), row.id]" [queryParams]="filters()">Open</a>
 
         @if (row.deletedAt) {
           <p-tag value="Deleted" severity="warn" />

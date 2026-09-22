@@ -25,7 +25,16 @@ internal static class ServiceDataRegistration
     /// <summary>The key the Employee service is configured under in the "Services" section.</summary>
     private const string EmployeeServiceDiscoveryKey = "Numo.Employee.Api";
 
+    /// <summary>The client every DataIntegration resource reads over - see
+    /// <see cref="Resources.DataIntegrationConfigurationApi"/> for why none of them use a client
+    /// library. The key is the literal "Services" section entry, already present in both
+    /// appsettings.json and the development template.</summary>
+    public const string DataIntegrationConfigurationHttpClientName = "NumoDataIntegrationConfigurationApi";
+
+    private const string DataIntegrationConfigurationServiceDiscoveryKey = "Numo.DataIntegration.Configuration.Api";
+
     private static readonly TimeSpan DepartmentRolesRequestTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DataIntegrationRequestTimeout = TimeSpan.FromSeconds(30);
 
     public static IServiceCollection AddServiceDataFeature(this IServiceCollection services)
     {
@@ -44,18 +53,38 @@ internal static class ServiceDataRegistration
         services.AddNumoTenantSetter(ServiceLifetime.Scoped);
 
         AddDepartmentRolesHttpClient(services);
+        AddDataIntegrationConfigurationHttpClient(services);
 
         // The catalogue's resources are not registered here: numo-core's convention scan over this
         // assembly already registers every class against the interfaces it implements, so an
         // explicit IServiceDataResource registration makes the catalogue see the same resource twice.
         services.AddScoped<ServiceDataCatalogue>();
 
-        // The convention scan registers a class against the interfaces it implements, and this one
-        // implements none, so without this line every resource that resolves it fails to activate.
+        // The convention scan registers a class against the interfaces it implements, and these
+        // implement none, so without these lines every resource that resolves them fails to activate.
         services.AddScoped<PersonNameLookup>();
+        services.AddScoped<DataIntegrationConfigurationApi>();
 
         return services;
     }
+
+    /// <summary>
+    /// Numo.DataIntegration.Configuration.Lib and Numo.DataIntegration.Connectors.Lib are
+    /// deliberately not referenced at all: neither fits this section's browsing needs (see
+    /// <see cref="Resources.DataIntegrationConfigurationApi"/>), so every resource here reads the
+    /// Configuration API directly. No tenant header: a live probe confirmed the service answers
+    /// anonymously.
+    /// </summary>
+    private static void AddDataIntegrationConfigurationHttpClient(IServiceCollection services)
+        => services
+            .AddHttpClient(DataIntegrationConfigurationHttpClientName)
+            .ConfigureHttpClient((serviceProvider, httpClient) =>
+            {
+                httpClient.BaseAddress = serviceProvider
+                    .GetRequiredService<IServiceDiscoveryService>()
+                    .GetServiceLocation(DataIntegrationConfigurationServiceDiscoveryKey);
+                httpClient.Timeout = DataIntegrationRequestTimeout;
+            });
 
     /// <summary>
     /// The department roles resource has no client library to configure it, so its base address is

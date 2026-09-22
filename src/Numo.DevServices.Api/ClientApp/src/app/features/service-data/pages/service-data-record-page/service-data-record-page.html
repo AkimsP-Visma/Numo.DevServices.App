@@ -13,7 +13,7 @@
     <app-tenant-id-field />
   </header>
 
-  @if (!hasTenantId()) {
+  @if (requiresTenant() && !hasTenantId()) {
     <p-message severity="info" text="Enter a tenant id to load this record." />
   } @else if (isMissing()) {
     <p-message

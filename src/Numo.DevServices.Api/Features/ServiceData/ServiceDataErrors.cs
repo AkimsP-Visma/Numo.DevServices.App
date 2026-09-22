@@ -8,6 +8,7 @@ internal static class ServiceDataErrors
     private static readonly Guid RecordNotFoundId = new("d38f5a62-7c14-4e9b-86d0-3f1b7e2a95c8");
     private static readonly Guid DownstreamCallFailedId = new("1e5a9d37-2b6c-4f80-9d14-7c3e8b5f2a60");
     private static readonly Guid DownstreamCallUnauthorizedId = new("47c2e8b9-5f01-4a3d-92b6-8d7e1c4a06f5");
+    private static readonly Guid RequiredFilterMissingId = new("9a2d6c1e-4f83-4b91-8e5a-1c7d3f9b6a02");
 
     public static NumoError UnknownResource(string resourceKey)
         => new(UnknownResourceId, $"Service data resource '{resourceKey}' does not exist.");
@@ -38,4 +39,14 @@ internal static class ServiceDataErrors
         => new(
             DownstreamCallUnauthorizedId,
             $"The downstream call for {callDescription} was rejected before it was sent because this app has no authenticated principal.");
+
+    /// <summary>A nested resource's detail route reached with none of the parent id it needs -
+    /// e.g. di-client-resources opened with no clientId filter. The page route rejects this before
+    /// a resource ever runs (<see cref="FilterDescriptor.IsRequired"/>); the record route does not,
+    /// since not every resource's detail needs the filter its list requires, so a resource that does
+    /// need it reports this explicitly instead of throwing a bare exception.</summary>
+    public static NumoError RequiredFilterMissing(string resourceKey, string filterKey)
+        => new(
+            RequiredFilterMissingId,
+            $"Resource '{resourceKey}' requires filter '{filterKey}' to be set.");
 }

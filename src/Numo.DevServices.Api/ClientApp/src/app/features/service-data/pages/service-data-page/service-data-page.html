@@ -1,6 +1,6 @@
 <section class="service-data">
   <header class="service-data__header">
-    <h1>Service data</h1>
+    <h1>{{ sectionTitle() }}</h1>
 
     <app-tenant-id-field />
   </header>
@@ -10,7 +10,7 @@
   }
 
   <nav class="service-data__picker">
-    @for (resource of resources(); track resource.key) {
+    @for (resource of pickerResources(); track resource.key) {
       <p-button
         [label]="resource.label"
         [severity]="resource.key === resourceKey() ? 'primary' : 'secondary'"
@@ -20,13 +20,18 @@
     }
   </nav>
 
-  @if (!hasTenantId()) {
+  @if (requiresTenant() && !hasTenantId()) {
     <p-message
       severity="info"
       text="Enter a tenant id above. Every record in these services belongs to one tenant, and nothing is requested until there is one."
     />
   } @else if (!resourceKey()) {
     <p-message severity="info" text="Pick a resource to browse." />
+  } @else if (missingRequiredFilter(); as required) {
+    <p-message
+      severity="info"
+      [text]="'Pick a ' + required.label + ' first - open this resource from a relation link on its parent record.'"
+    />
   } @else if (descriptor()) {
     <p class="service-data__service">
       {{ descriptor()!.label }} from {{ descriptor()!.serviceName }}
@@ -51,6 +56,7 @@
         [resourceKey]="resourceKey()!"
         [columns]="descriptor()!.columns"
         [rows]="loaded.rows"
+        [filters]="filterValues()"
         [sortColumn]="sortColumn()"
         [isSortDescending]="isSortDescending()"
         (sortRequested)="applySort($event)"
