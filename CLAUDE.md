@@ -1,12 +1,11 @@
 # Numo.DevServices.App
 
-.NET 10 API in vertical slices with an Angular 21 frontend. `SampleItems` is a placeholder
-slice proving the pipeline end to end - copy its shape, then delete it once real features land.
+.NET 10 API in vertical slices with an Angular 21 frontend.
 
 A developer-only tool for browsing data the main Numo UI does not expose. **Read
 `docs/Purpose.md` first** - it holds the planned features, the standing design decisions
 (frontend calls this backend only, prefer service client libs, generic data-driven UI), and the
-open questions. Nothing real is implemented yet.
+open questions.
 
 ## Layout
 
@@ -16,6 +15,8 @@ src/Numo.DevServices.Api/          the whole backend, one project
   DevServicesModule.cs             IBusinessModule; also the assembly marker for handler discovery
   GlobalUsings.cs
   Features/<Slice>/                one folder per slice, everything it needs inside
+  Features/Environments/           Testing/Staging/Production/Local; which one is active and its
+                                    service locations, replacing IServiceDiscoveryService's own
   Features/Services/               the registry of Numo services and their OpenAPI documents
   Features/FeatureFlags/           the LaunchDarkly toggle list, read over the LaunchDarkly REST API
   Features/ServiceHealth/          the ping dashboard over the same configured services
@@ -32,6 +33,9 @@ src/Numo.DevServices.Api/          the whole backend, one project
 `appsettings.Development.json` is gitignored: copy `appsettings.Development.Template.json` over it
 once and adjust. It needs Postgres on `localhost:5432` with those credentials; `devservices_db` is
 created and migrated on first boot.
+
+`Run-DevServices.bat` at the repo root does the above (including the template copy) and starts both
+halves in their own windows - for someone without a terminal habit or Rider. Otherwise:
 
 ```
 dotnet run --project src/Numo.DevServices.Api        # https://localhost:7220, http://localhost:5220
@@ -65,10 +69,14 @@ dotnet ef migrations add <Name> --project src/Numo.DevServices.Api --output-dir 
 - **Handlers take `DevServicesDbContext` directly.** No repository interfaces: inside a single
   project they add indirection without isolation.
 - **Reach other Numo services through their shared abstractions.** `IServiceDiscoveryService` from
-  `Numo.Common.Lib` (registered by `AddNumoCommonServices`) reads the `Services` configuration
-  section; a service's own client library is preferred over a hand-rolled HTTP client. Note that its
-  lookups throw `ServiceDoesNotExistException` instead of returning null, and that `AppId` is absent
-  from our configuration, so `GetServiceAppId` always throws.
+  `Numo.Common.Lib` is the interface every resource depends on, but `AddNumoCommonServices`'s own
+  `ConfigurationServiceDiscoveryService` is replaced (`services.Replace`, in
+  `Features/Environments/EnvironmentsRegistration.cs`) with `EnvironmentAwareServiceDiscovery`, which
+  reads whichever environment (Testing/Staging/Production/Local) is currently selected from the
+  `Environments` configuration section instead of a flat `Services` one. A service's own client
+  library is still preferred over a hand-rolled HTTP client. Note that lookups throw
+  `ServiceDoesNotExistException` instead of returning null, and that `AppId` is absent from our
+  configuration, so `GetServiceAppId` always throws.
 - **A slice registers its own infrastructure** in a `<Slice>Registration.cs` extension the module
   calls, so an HTTP client or similar does not leak into `DevServicesModule`.
 - **Do not register a class that implements a discovered interface.** `AddNumoMediator`'s convention

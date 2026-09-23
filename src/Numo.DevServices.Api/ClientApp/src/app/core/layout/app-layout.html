@@ -1,6 +1,21 @@
-<div class="app-layout">
+<div
+  class="app-layout"
+  [class.app-layout--testing]="environmentStore.current() === 'Testing'"
+  [class.app-layout--staging]="environmentStore.current() === 'Staging'"
+  [class.app-layout--production]="environmentStore.current() === 'Production'"
+>
   <header class="app-layout__header">
     <span class="app-layout__title">Numo Dev Services</span>
+
+    @if (environmentStore.known().length) {
+      <p-select
+        class="app-layout__environment"
+        [options]="[...environmentStore.known()]"
+        [ngModel]="environmentStore.current()"
+        [ngModelOptions]="{ standalone: true }"
+        (ngModelChange)="environmentStore.switchTo($event)"
+      />
+    }
   </header>
 
   <div class="app-layout__body">

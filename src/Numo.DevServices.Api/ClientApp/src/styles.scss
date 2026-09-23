@@ -39,6 +39,31 @@ body {
 }
 
 /*
+ * Same dither technique, recolored per active environment (see app-layout.scss's matching header
+ * gradient) so the desktop strip and the title bar read as one indicator, not two.
+ */
+body:has(.app-layout--testing) {
+  background-color: #063d06;
+  background-image:
+    linear-gradient(45deg, #0a7d0a 25%, transparent 25%, transparent 75%, #0a7d0a 75%, #0a7d0a),
+    linear-gradient(45deg, #0a7d0a 25%, transparent 25%, transparent 75%, #0a7d0a 75%, #0a7d0a);
+}
+
+body:has(.app-layout--staging) {
+  background-color: #3d2900;
+  background-image:
+    linear-gradient(45deg, #c77f00 25%, transparent 25%, transparent 75%, #c77f00 75%, #c77f00),
+    linear-gradient(45deg, #c77f00 25%, transparent 25%, transparent 75%, #c77f00 75%, #c77f00);
+}
+
+body:has(.app-layout--production) {
+  background-color: #3d0f0f;
+  background-image:
+    linear-gradient(45deg, #b22222 25%, transparent 25%, transparent 75%, #b22222 75%, #b22222),
+    linear-gradient(45deg, #b22222 25%, transparent 25%, transparent 75%, #b22222 75%, #b22222);
+}
+
+/*
  * PrimeNG's compiled component styles only wire a `border`/`box-shadow` into the
  * base .p-button, .p-tag and .p-dialog-header rules that our design tokens (see
  * win98-preset.ts) can reach directly for every other component. These few rules

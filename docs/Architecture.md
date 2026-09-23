@@ -14,15 +14,10 @@ four projects.
 src/Numo.DevServices.Api/
   Program.cs                  numo-core host
   DevServicesModule.cs        IBusinessModule and assembly marker
-  Features/SampleItems/       the reference slice
-    SampleItem.cs                     entity : BaseEntity
-    SampleItemSpecification.cs        field constraints, single source
-    SampleItemConfiguration.cs        EF mapping
-    SampleItemErrors.cs               NumoErrors with stable ids
-    GetSampleItems.cs                 query + validator + result + handler
-    GetSampleItemById.cs
-    CreateSampleItem.cs
-    SampleItemsController.cs
+  Features/Services/          the registry of Numo services and their OpenAPI documents
+  Features/FeatureFlags/      the LaunchDarkly toggle list
+  Features/ServiceHealth/     the ping dashboard over the configured services
+  Features/ServiceData/       descriptor-driven browsing across Personnel and DataIntegration
   Persistence/
     DevServicesDbContext.cs           schema "DevServices"
     DevServicesDbContextDesignFactory.cs

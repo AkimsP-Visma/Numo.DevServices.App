@@ -25,12 +25,12 @@ service win over anything else.
    step's dataset - the last three reachable only via a relation button, never listed). One
    backend slice serves two frontend nav entries, "Personnel Browser" and "DataIntegration
    Browser" - see `ResourceDescriptor.Section`.
-4. **Service status dashboard.** Whether every service under the `Services` configuration section
-   answers its ping endpoint, refreshed while the page is open. *Built* - `Features/ServiceHealth/`
+4. **Service status dashboard.** Whether every service in the active environment (see
+   `Features/Environments/`) answers its ping endpoint, refreshed while the page is open. *Built* -
+   `Features/ServiceHealth/`
    plus the `/service-health` page.
 
-Features 1, 3 and 4 are built, 2 in part. `Features/SampleItems/` is scaffolding that
-proves the pipeline end to end; it is not one of them.
+Features 1, 3 and 4 are built, 2 in part.
 
 ## Design decisions
 
@@ -178,10 +178,11 @@ proves the pipeline end to end; it is not one of them.
 ## Open questions
 
 - **When does the service registry move into the database?** The list currently comes from the
-  `Services` section of `appsettings.Development.json` via `IServiceDiscoveryService`. The intended
-  next step is storing it in this app's database and editing it through the UI, which is what the
-  scaffolded EF Core setup is for. The swap is a second implementation of that same interface plus
-  a registration change - handlers do not know where the list came from.
+  `Environments` section of `appsettings.json` (one set of locations per environment - Testing,
+  Staging, Production, Local - selected at runtime via `Features/Environments/`) through
+  `IServiceDiscoveryService`. `EnvironmentAwareServiceDiscovery` is already the second implementation
+  of that interface this question anticipated; a further move into the database would be a third,
+  same swap - handlers do not know where the list came from.
 - **Answered: "generic components from JSON" is an explicit display descriptor.**
   `Features/ServiceData/` settles it. Each resource declares its columns, filters and relations in
   C#, and the frontend has two components that render whatever arrives. Seven resources needed no

@@ -6,17 +6,39 @@
   &__header {
     display: flex;
     align-items: center;
+    gap: 1rem;
     padding: 0 1.5rem;
     height: 2.25rem;
+    // Local (or before the environment loads) keeps the plain Luna blue - "nothing special, just my
+    // machine" is the right default look, not a fourth color to invent.
     background: linear-gradient(to right, var(--p-primary-950), var(--p-primary-color));
     border-bottom: 1px solid var(--p-surface-950);
     color: #fff;
+  }
+
+  // Reuses the exact accent colors already established for tags/messages (win98-preset.ts /
+  // styles.scss), darkened for the gradient's title-bar-left end, so the environment indicator reads
+  // as part of the same theme instead of a bolted-on warning banner.
+  &--testing &__header {
+    background: linear-gradient(to right, #123b12, var(--win98-success-color));
+  }
+
+  &--staging &__header {
+    background: linear-gradient(to right, #5c3d00, var(--win98-warn-color));
+  }
+
+  &--production &__header {
+    background: linear-gradient(to right, #591111, var(--win98-danger-color));
   }
 
   &__title {
     font-size: 0.8125rem;
     font-weight: 700;
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  &__environment {
+    margin-left: auto;
   }
 
   &__body {

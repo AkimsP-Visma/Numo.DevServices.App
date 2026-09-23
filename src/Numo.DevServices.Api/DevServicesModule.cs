@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Numo.Common.Lib.Extensions;
+using Numo.DevServices.Api.Features.Environments;
 using Numo.DevServices.Api.Features.FeatureFlags;
 using Numo.DevServices.Api.Features.ServiceHealth;
 using Numo.DevServices.Api.Features.ServiceData;
@@ -16,10 +17,11 @@ public sealed class DevServicesModule : IBusinessModule
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        // Brings in IServiceDiscoveryService, which reads the "Services" section; its implementation
-        // is internal to the package, so this call is the only way to obtain it.
+        // Brings in IServiceDiscoveryService; AddEnvironmentsFeature below replaces its
+        // implementation, so it must run after this call.
         services.AddNumoCommonServices();
 
+        services.AddEnvironmentsFeature();
         services.AddServicesFeature();
         services.AddServiceHealthFeature();
         services.AddFeatureFlagsFeature();

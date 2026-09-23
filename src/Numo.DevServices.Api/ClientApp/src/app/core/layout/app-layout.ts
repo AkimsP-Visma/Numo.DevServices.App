@@ -1,5 +1,8 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { SelectModule } from 'primeng/select';
+import { EnvironmentStore } from '../environments/environment.store';
 
 interface NavigationItem {
   readonly label: string;
@@ -11,12 +14,14 @@ interface NavigationItem {
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, SelectModule],
   templateUrl: './app-layout.html',
   styleUrl: './app-layout.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppLayout {
+  protected readonly environmentStore = inject(EnvironmentStore);
+
   protected readonly navigationItems: readonly NavigationItem[] = [
     { label: 'Swagger', route: '/swagger' },
     { label: 'Service status', route: '/service-health' },
@@ -27,6 +32,5 @@ export class AppLayout {
       queryParams: { section: 'DataIntegration' },
     },
     { label: 'Feature toggles', route: '/feature-flags' },
-    { label: 'Sample items', route: '/sample-items' },
   ];
 }
