@@ -9,12 +9,16 @@ namespace Numo.DevServices.Api.Features.ServiceData.Resources;
 /// still reads through <see cref="DataIntegrationConfigurationApi.GetOrNullEitherShapeAsync{T}"/>
 /// rather than assuming the object shape everywhere, since the spec proved unreliable once already.
 ///
-/// state, PipelineExecutionState and PipelineExecutionResult cross the wire as bare integers and no
-/// enum names exist anywhere reachable here - not in the OpenAPI spec (no x-enumNames), and the
-/// client library that has the real enum types is not referenced (see
-/// <see cref="DataIntegrationConfigurationApi"/>). Showing a fabricated name would be worse than a
-/// number, so these render as <see cref="FieldKind.Number"/> and the state filter is dropped rather
-/// than offered with guessed option names.
+/// state and result cross the wire as bare integers with no enum names in the OpenAPI spec (no
+/// x-enumNames) and no reachable client type (see <see cref="DataIntegrationConfigurationApi"/>).
+/// <see cref="PipelineExecutionState"/> and <see cref="PipelineExecutionResult"/> below are not
+/// guessed: they're copied from Numo.DataIntegration.Configuration.Api's own domain model
+/// (src/Numo.DataIntegration.Configuration.Domain/PipelineExecutions/PipelineExecution.cs in that
+/// repo, read directly on 2026-09-23), matching its member names and numeric values exactly, since
+/// this project has no dependency on that domain assembly to share the type from. The state filter
+/// stays dropped even so - fetching this resource still means fetching every execution and slicing
+/// in memory (see <see cref="ResourcePageBuilder.BuildUnpagedAsync{TItem}"/>), and this resource does
+/// not yet filter that in-memory set by anything but the required pipelineId.
 /// </summary>
 public sealed class PipelineExecutionsResource(DataIntegrationConfigurationApi api) : IServiceDataResource
 {
@@ -30,10 +34,10 @@ public sealed class PipelineExecutionsResource(DataIntegrationConfigurationApi a
         ResourceSection.DataIntegration,
         [
             new ColumnDescriptor("pipelineId", "Pipeline id", FieldKind.Guid, IsSortable: false),
-            new ColumnDescriptor("state", "State", FieldKind.Number, IsSortable: false),
+            new ColumnDescriptor("state", "State", FieldKind.Enum, IsSortable: false),
             new ColumnDescriptor("startTime", "Start time", FieldKind.DateTime, IsSortable: false),
             new ColumnDescriptor("endTime", "End time", FieldKind.DateTime, IsSortable: false),
-            new ColumnDescriptor("result", "Result", FieldKind.Number, IsSortable: false),
+            new ColumnDescriptor("result", "Result", FieldKind.Enum, IsSortable: false),
         ],
         [
             new FilterDescriptor(PipelineIdFilterKey, "Pipeline id", FilterKind.Guid, Options: null, IsRequired: true),
@@ -82,10 +86,10 @@ public sealed class PipelineExecutionsResource(DataIntegrationConfigurationApi a
             DeletedAt: null,
             [
                 new Cell(execution.PipelineId.ToString(), new RecordLink(PipelinesResourceKey, execution.PipelineId)),
-                new Cell(FieldFormat.FormatNumber(execution.State), Link: null),
+                new Cell(FieldFormat.Format(execution.State), Link: null),
                 new Cell(FieldFormat.Format(execution.StartTime), Link: null),
                 new Cell(FieldFormat.Format(execution.EndTime), Link: null),
-                new Cell(FieldFormat.FormatNumber(execution.Result), Link: null),
+                new Cell(FieldFormat.Format(execution.Result), Link: null),
             ]);
 
     private static ResourceRecord ToRecord(PipelineExecution execution)
@@ -99,10 +103,10 @@ public sealed class PipelineExecutionsResource(DataIntegrationConfigurationApi a
                     execution.PipelineId.ToString(),
                     FieldKind.Guid,
                     new RecordLink(PipelinesResourceKey, execution.PipelineId)),
-                new FieldValue("State", FieldFormat.FormatNumber(execution.State), FieldKind.Number, Link: null),
+                new FieldValue("State", FieldFormat.Format(execution.State), FieldKind.Enum, Link: null),
                 new FieldValue("Start time", FieldFormat.Format(execution.StartTime), FieldKind.DateTime, Link: null),
                 new FieldValue("End time", FieldFormat.Format(execution.EndTime), FieldKind.DateTime, Link: null),
-                new FieldValue("Result", FieldFormat.FormatNumber(execution.Result), FieldKind.Number, Link: null),
+                new FieldValue("Result", FieldFormat.Format(execution.Result), FieldKind.Enum, Link: null),
             ],
             [
                 RelationDescriptor.To("Steps", ExecutionStepsResourceKey, "executionId", execution.Id.ToString()),
@@ -112,7 +116,28 @@ public sealed class PipelineExecutionsResource(DataIntegrationConfigurationApi a
 internal sealed record PipelineExecution(
     Guid Id,
     Guid PipelineId,
-    int State,
+    PipelineExecutionState State,
     DateTimeOffset? StartTime,
     DateTimeOffset? EndTime,
-    int Result);
+    PipelineExecutionResult Result);
+
+/// <summary>Copied member-for-member (name and numeric value) from
+/// Numo.DataIntegration.Configuration.Api's own domain enum - see the class-level remark above for
+/// exactly where and why this project keeps its own copy instead of a shared reference.</summary>
+internal enum PipelineExecutionState
+{
+    Pending = 0,
+    Building = 1,
+    Starting = 2,
+    Executing = 3,
+    Finished = 4,
+}
+
+/// <summary>See <see cref="PipelineExecutionState"/>.</summary>
+internal enum PipelineExecutionResult
+{
+    None = 0,
+    Succeeded = 1,
+    Failed = 2,
+    Cancelled = 3,
+}

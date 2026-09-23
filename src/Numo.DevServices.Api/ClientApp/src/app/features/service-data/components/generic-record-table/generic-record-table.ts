@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { formatFieldValue } from '../../api/format-field-value';
 import { Cell, ColumnDescriptor, ResourceRow } from '../../api/service-data.model';
 
 export interface SortRequest {
@@ -41,8 +42,7 @@ export class GenericRecordTable {
     this.sortRequested.emit({ column: event.field, isDescending: event.order === -1 });
   }
 
-  /** Empty and absent read the same in a grid, so both show the placeholder rather than nothing. */
-  protected display(cell: Cell): string {
-    return cell.value === null || cell.value.length === 0 ? '-' : cell.value;
+  protected display(cell: Cell, column: ColumnDescriptor): string {
+    return formatFieldValue(cell.value, column.kind);
   }
 }

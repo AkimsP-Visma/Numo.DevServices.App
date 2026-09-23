@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { formatFieldValue } from '../../api/format-field-value';
 import { FieldValue } from '../../api/service-data.model';
 
 /**
@@ -18,6 +19,6 @@ export class GenericRecordDetail {
   readonly fields = input.required<readonly FieldValue[]>();
 
   protected display(field: FieldValue): string {
-    return field.value === null || field.value.length === 0 ? '-' : field.value;
+    return formatFieldValue(field.value, field.kind);
   }
 }

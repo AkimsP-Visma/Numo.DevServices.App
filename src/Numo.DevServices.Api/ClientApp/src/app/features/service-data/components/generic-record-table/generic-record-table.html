@@ -38,10 +38,10 @@
         <td>
           @if (cell.link) {
             <a [routerLink]="['/service-data', cell.link.targetResource, cell.link.id]">
-              {{ display(cell) }}
+              {{ display(cell, columns()[$index]) }}
             </a>
           } @else {
-            {{ display(cell) }}
+            {{ display(cell, columns()[$index]) }}
           }
         </td>
       }
