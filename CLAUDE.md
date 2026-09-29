@@ -23,7 +23,7 @@ src/Numo.DevServices.Api/          the whole backend, one project
   Features/ServiceData/            descriptor-driven browsing across two sections: Personnel
                                     (Person and Employee records) and DataIntegration (the
                                     Configuration API's clients, pipelines, connections and more)
-  Features/ServiceData/Resources/  one class per browsable resource, eighteen of them
+  Features/ServiceData/Resources/  one class per browsable resource, nineteen of them
   Persistence/                     DbContext, design-time factory, migrations
   ClientApp/                       Angular app
 ```
@@ -81,7 +81,7 @@ dotnet ef migrations add <Name> --project src/Numo.DevServices.Api --output-dir 
   calls, so an HTTP client or similar does not leak into `DevServicesModule`.
 - **Do not register a class that implements a discovered interface.** `AddNumoMediator`'s convention
   scan registers every class in this assembly against the interfaces it implements, so an explicit
-  registration adds a second copy. `Features/ServiceData/` shows both halves: its eighteen
+  registration adds a second copy. `Features/ServiceData/` shows both halves: its nineteen
   `IServiceDataResource` classes are registered by the scan and adding a line for one crashes
   startup with "An item with the same key has already been added", while its helpers that implement
   no interface do need an `AddScoped`.

@@ -19,12 +19,12 @@ service win over anything else.
    `Features/FeatureFlags/` plus the `/feature-flags` page; the copy-out is not.
 3. **Service data browsing.** Lists of records, and a single-record view for a chosen row. *Built* -
    `Features/ServiceData/` plus the `/service-data` pages, over seven Personnel resources (Person
-   and Employee services) and eleven DataIntegration resources (the Configuration API's clients,
+   and Employee services) and twelve DataIntegration resources (the Configuration API's clients,
    pipelines, connections, connectors, client resources, pipeline resources, pipeline executions
-   and execution steps, plus connection credentials, connection certificates and an execution
-   step's dataset - the last three reachable only via a relation button, never listed). One
-   backend slice serves two frontend nav entries, "Personnel Browser" and "DataIntegration
-   Browser" - see `ResourceDescriptor.Section`.
+   and execution steps, plus connection parameters, connection credentials, connection certificates
+   and an execution step's dataset - the last three reachable only via a relation button, never
+   listed). One backend slice serves two frontend nav entries, "Personnel Browser" and
+   "DataIntegration Browser" - see `ResourceDescriptor.Section`.
 4. **Service status dashboard.** Whether every service in the active environment (see
    `Features/Environments/`) answers its ping endpoint, refreshed while the page is open. *Built* -
    `Features/ServiceHealth/`
@@ -135,7 +135,11 @@ Features 1, 3 and 4 are built, 2 in part.
   (`ResourceDescriptor.IsReachableOnlyByRelation`), fetched only when their panel's button is
   pressed. `di-connections` itself never sends the `expand` query parameter that would embed credentials or
   certificates into a list - its own DTO has no property for either, so even an unexpected
-  expansion could not leak into a cell. A dataset's own fields have no fixed schema (they are
+  expansion could not leak into a cell. `di-connection-parameters` reads the same
+  `expand`-on-detail mechanism as certificates, but is not gated: verified live against
+  test.numo.lv, every connection's `parameters` dictionary carries plain configuration (a
+  `RestUrl`), never a secret, so it renders as an ordinary auto-loading relation. A dataset's own
+  fields have no fixed schema (they are
   whatever the source connector produced), so its detail record renders every field the record
   carries rather than declaring columns in advance. `connector-key` and `numo-key` are confirmed
   non-secret identifiers and would be shown as ordinary fields if a later pass adds the extra

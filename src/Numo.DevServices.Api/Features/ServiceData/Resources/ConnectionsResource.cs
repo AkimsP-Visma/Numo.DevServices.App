@@ -5,9 +5,11 @@ namespace Numo.DevServices.Api.Features.ServiceData.Resources;
 /// <summary>
 /// The Configuration API's connections. <c>expand</c> exists as a query parameter on this route in
 /// the OpenAPI spec, but it is never sent here, deliberately: the connection response embeds
-/// credentials and certificates when expanded, and the settled security decision is that neither
-/// ever appears in a list. <see cref="Connection"/> has no property for either, so even an
-/// unexpected expansion cannot leak into a cell - not just discipline, a structural guarantee.
+/// credentials, certificates and parameters when expanded, and the settled security decision is
+/// that credentials and certificates never appear in a list. <see cref="Connection"/> has no
+/// property for either, so even an unexpected expansion cannot leak into a cell - not just
+/// discipline, a structural guarantee. Parameters are not secret (verified live - see
+/// <see cref="ConnectionParametersResource"/>), so that relation is an ordinary one, not gated.
 /// </summary>
 public sealed class ConnectionsResource(DataIntegrationConfigurationApi api) : IServiceDataResource
 {
@@ -15,6 +17,7 @@ public sealed class ConnectionsResource(DataIntegrationConfigurationApi api) : I
     private const string ConnectorsResourceKey = "di-connectors";
     private const string CredentialsResourceKey = "di-connection-credentials";
     private const string CertificatesResourceKey = "di-connection-certificates";
+    private const string ParametersResourceKey = "di-connection-parameters";
 
     private const string OrganizationIdFilterKey = "organizationId";
     private const string ConnectorNameFilterKey = "connectorName";
@@ -103,6 +106,7 @@ public sealed class ConnectionsResource(DataIntegrationConfigurationApi api) : I
             [
                 RelationDescriptor.To("Credentials", CredentialsResourceKey, "connectionId", connection.Id.ToString()),
                 RelationDescriptor.To("Certificates", CertificatesResourceKey, "connectionId", connection.Id.ToString()),
+                RelationDescriptor.To("Parameters", ParametersResourceKey, "connectionId", connection.Id.ToString()),
             ]);
 }
 
