@@ -24,11 +24,20 @@
     color: var(--p-text-muted-color, #6c757d);
   }
 
-  &__value {
-    margin-top: 0.25rem;
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
+  &__value-chip {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
     word-break: break-word;
+  }
+
+  &__targeting-off {
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--p-text-muted-color, #6c757d);
   }
 
   &__tag {

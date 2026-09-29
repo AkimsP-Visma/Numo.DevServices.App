@@ -43,12 +43,31 @@
 
         @for (environmentKey of environmentKeys(); track environmentKey) {
           <td>
-            @if (flag.environments[environmentKey]; as state) {
-              <p-tag
-                [value]="state.isOn ? 'On' : 'Off'"
-                [severity]="state.isOn ? 'success' : 'secondary'"
-              />
-              <div class="feature-flags-page__value">{{ describeValue(state) }}</div>
+            @if (environmentDisplay(flag, environmentKey); as display) {
+              @switch (display.kind) {
+                @case ('true') {
+                  <p-tag value="True" severity="success" />
+                }
+                @case ('false') {
+                  <p-tag value="False" severity="danger" />
+                }
+                @case ('discrete') {
+                  <span
+                    class="feature-flags-page__value-chip"
+                    [style.background-color]="display.color!.background"
+                    [style.color]="display.color!.foreground"
+                  >
+                    {{ display.label }}
+                  </span>
+                }
+                @default {
+                  <p-tag [value]="display.label" severity="secondary" />
+                }
+              }
+
+              @if (display.isTargetingOff) {
+                <div class="feature-flags-page__targeting-off">Targeting off</div>
+              }
             } @else {
               {{ '-' }}
             }
