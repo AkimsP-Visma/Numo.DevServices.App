@@ -7,9 +7,21 @@ import { TagModule } from 'primeng/tag';
 import { readProblemDetail } from '../../../../shared/api/problem-details';
 import { FeatureFlag, FeatureFlagEnvironmentState } from '../../api/feature-flag.model';
 import { FeatureFlagsApiService } from '../../api/feature-flags-api.service';
+import { HiddenEnvironmentsStore } from '../../state/hidden-environments.store';
 
 const ROLLOUT_LABEL = 'percentage rollout';
 const SDK_DEFAULT_LABEL = 'SDK default';
+
+// Sentinel markers for the "differs across environments" comparison, distinct from anything
+// JSON.stringify(value) could ever produce, so a rollout or an absent environment cannot collide
+// with a real value that happens to be the string "rollout" or similar.
+const ROLLOUT_MARKER = '\u0000rollout';
+const SDK_DEFAULT_MARKER = '\u0000sdk-default';
+const ABSENT_MARKER = '\u0000absent';
+
+/** Below this many visible environments, "differs" is meaningless - there is nothing to differ
+ * from. */
+const MIN_ENVIRONMENTS_TO_COMPARE = 2;
 
 /**
  * Fixed-order categorical hues for a multivariate flag's own distinct values (the dataviz skill's
@@ -53,16 +65,48 @@ interface EnvironmentDisplay {
 })
 export class FeatureFlagsPage {
   private readonly featureFlagsApi = inject(FeatureFlagsApiService);
+  protected readonly hiddenEnvironments = inject(HiddenEnvironmentsStore);
 
   protected readonly flags = signal<FeatureFlag[]>([]);
   protected readonly environmentKeys = signal<string[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly showOnlyDiffering = signal(false);
 
-  protected readonly columnCount = computed(() => this.environmentKeys().length + 2);
+  /** All declared environments still drive the picker (so a hidden one can be turned back on);
+   * only this filtered order drives the table's own columns. */
+  protected readonly visibleEnvironmentKeys = computed(() =>
+    this.environmentKeys().filter((key) => !this.hiddenEnvironments.isHidden(key)),
+  );
+
+  protected readonly canCompareAcrossEnvironments = computed(
+    () => this.visibleEnvironmentKeys().length >= MIN_ENVIRONMENTS_TO_COMPARE,
+  );
+
+  /** Only rows whose value differs across the currently visible environments - not all
+   * environments, since a difference in a hidden column is not one the reader asked to see. */
+  protected readonly visibleFlags = computed(() => {
+    if (!this.showOnlyDiffering() || !this.canCompareAcrossEnvironments()) {
+      return this.flags();
+    }
+
+    const visibleKeys = this.visibleEnvironmentKeys();
+
+    return this.flags().filter((flag) => this.hasDifferingValues(flag, visibleKeys));
+  });
+
+  protected readonly columnCount = computed(() => this.visibleEnvironmentKeys().length + 2);
 
   constructor() {
     this.load();
+  }
+
+  protected toggleEnvironment(environmentKey: string): void {
+    this.hiddenEnvironments.toggle(environmentKey);
+  }
+
+  protected setShowOnlyDiffering(checked: boolean): void {
+    this.showOnlyDiffering.set(checked);
   }
 
   protected load(): void {
@@ -116,12 +160,13 @@ export class FeatureFlagsPage {
   }
 
   /** Where in this flag's own fixed hue order the current environment's value falls - scoped to
-   * one flag's row, not global, so an unrelated flag's variation 0 does not borrow this one's
-   * color for a coincidence that carries no shared meaning. */
+   * one flag's row and to the currently visible columns, not global, so an unrelated flag's
+   * variation 0 does not borrow this one's color for a coincidence that carries no shared
+   * meaning, and a hidden environment's value does not consume a slot no one sees. */
   private discreteValueColor(flag: FeatureFlag, environmentKey: string): ValueColor {
     const distinctLabels: string[] = [];
 
-    for (const key of this.environmentKeys()) {
+    for (const key of this.visibleEnvironmentKeys()) {
       const label = this.discreteLabel(flag.environments[key]);
 
       if (label !== null && !distinctLabels.includes(label)) {
@@ -142,5 +187,30 @@ export class FeatureFlagsPage {
     }
 
     return typeof state.value === 'string' ? state.value : JSON.stringify(state.value);
+  }
+
+  /** Whether this flag serves more than one distinct outcome across the given environments -
+   * value, rollout-ness and SDK-default-ness all count, but targeting on/off does not, matching
+   * the same "value is what matters" read the coloring above already gives the cell. */
+  private hasDifferingValues(flag: FeatureFlag, environmentKeys: readonly string[]): boolean {
+    const distinct = new Set(environmentKeys.map((key) => this.canonicalValue(flag.environments[key])));
+
+    return distinct.size > 1;
+  }
+
+  private canonicalValue(state: FeatureFlagEnvironmentState | undefined): string {
+    if (!state) {
+      return ABSENT_MARKER;
+    }
+
+    if (state.isRollout) {
+      return ROLLOUT_MARKER;
+    }
+
+    if (state.value === null || state.value === undefined) {
+      return SDK_DEFAULT_MARKER;
+    }
+
+    return JSON.stringify(state.value);
   }
 }
