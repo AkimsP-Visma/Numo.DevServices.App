@@ -51,7 +51,7 @@
     gap: 1.5rem;
   }
 
-  &__environment-picker {
+  &__filter-group {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -68,7 +68,7 @@
     }
   }
 
-  &__environment-option {
+  &__filter-option {
     display: flex;
     align-items: center;
     gap: 0.35rem;

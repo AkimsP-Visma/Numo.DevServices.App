@@ -10,17 +10,28 @@
   }
 
   <div class="feature-flags-page__toolbar">
-    <fieldset class="feature-flags-page__environment-picker">
+    <fieldset class="feature-flags-page__filter-group">
       <legend>Environments</legend>
 
       @for (environmentKey of environmentKeys(); track environmentKey) {
-        <label class="feature-flags-page__environment-option">
+        <label class="feature-flags-page__filter-option">
           <input
             type="checkbox"
             [checked]="!hiddenEnvironments.isHidden(environmentKey)"
             (change)="toggleEnvironment(environmentKey)"
           />
           {{ environmentKey }}
+        </label>
+      }
+    </fieldset>
+
+    <fieldset class="feature-flags-page__filter-group">
+      <legend>Tags</legend>
+
+      @for (tag of allTagOptions(); track tag) {
+        <label class="feature-flags-page__filter-option">
+          <input type="checkbox" [checked]="isTagSelected(tag)" (change)="toggleTag(tag)" />
+          {{ tag === noTagKey ? 'No tag' : tag }}
         </label>
       }
     </fieldset>
@@ -109,11 +120,7 @@
     <ng-template #emptymessage>
       <tr>
         <td [attr.colspan]="columnCount()">
-          {{
-            showOnlyDiffering() && flags().length > 0
-              ? 'No flag differs across the visible environments.'
-              : 'No feature toggles to show.'
-          }}
+          {{ flags().length === 0 ? 'No feature toggles to show.' : 'No feature toggle matches the current filters.' }}
         </td>
       </tr>
     </ng-template>

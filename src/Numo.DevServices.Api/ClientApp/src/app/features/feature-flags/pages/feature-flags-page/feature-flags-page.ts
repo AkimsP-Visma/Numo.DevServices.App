@@ -19,6 +19,10 @@ const ROLLOUT_MARKER = '\u0000rollout';
 const SDK_DEFAULT_MARKER = '\u0000sdk-default';
 const ABSENT_MARKER = '\u0000absent';
 
+/** The tag-picker's synthetic entry for "has no tags at all" - distinct from any real tag name,
+ * which LaunchDarkly tags cannot contain (they are identifier-shaped). */
+const NO_TAG_KEY = '\u0000no-tag';
+
 /** Below this many visible environments, "differs" is meaningless - there is nothing to differ
  * from. */
 const MIN_ENVIRONMENTS_TO_COMPARE = 2;
@@ -72,6 +76,23 @@ export class FeatureFlagsPage {
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly showOnlyDiffering = signal(false);
+  protected readonly selectedTags = signal<ReadonlySet<string>>(new Set());
+
+  protected readonly noTagKey = NO_TAG_KEY;
+
+  /** Every distinct tag across all flags, plus the "No tag" picker entry - not scoped to whichever
+   * flags currently pass the other filters, so unchecking a tag never removes its own checkbox. */
+  protected readonly allTagOptions = computed(() => {
+    const tags = new Set<string>();
+
+    for (const flag of this.flags()) {
+      for (const tag of flag.tags) {
+        tags.add(tag);
+      }
+    }
+
+    return [...tags].sort((a, b) => a.localeCompare(b)).concat(NO_TAG_KEY);
+  });
 
   /** All declared environments still drive the picker (so a hidden one can be turned back on);
    * only this filtered order drives the table's own columns. */
@@ -83,16 +104,19 @@ export class FeatureFlagsPage {
     () => this.visibleEnvironmentKeys().length >= MIN_ENVIRONMENTS_TO_COMPARE,
   );
 
-  /** Only rows whose value differs across the currently visible environments - not all
+  /** Tag filter (OR across the selected tags, "No tag" included as its own option) first, then
+   * only rows whose value differs across the currently visible environments - not all
    * environments, since a difference in a hidden column is not one the reader asked to see. */
   protected readonly visibleFlags = computed(() => {
+    const tagFiltered = this.applyTagFilter(this.flags());
+
     if (!this.showOnlyDiffering() || !this.canCompareAcrossEnvironments()) {
-      return this.flags();
+      return tagFiltered;
     }
 
     const visibleKeys = this.visibleEnvironmentKeys();
 
-    return this.flags().filter((flag) => this.hasDifferingValues(flag, visibleKeys));
+    return tagFiltered.filter((flag) => this.hasDifferingValues(flag, visibleKeys));
   });
 
   protected readonly columnCount = computed(() => this.visibleEnvironmentKeys().length + 2);
@@ -107,6 +131,22 @@ export class FeatureFlagsPage {
 
   protected setShowOnlyDiffering(checked: boolean): void {
     this.showOnlyDiffering.set(checked);
+  }
+
+  protected isTagSelected(tag: string): boolean {
+    return this.selectedTags().has(tag);
+  }
+
+  protected toggleTag(tag: string): void {
+    const next = new Set(this.selectedTags());
+
+    if (next.has(tag)) {
+      next.delete(tag);
+    } else {
+      next.add(tag);
+    }
+
+    this.selectedTags.set(next);
   }
 
   protected load(): void {
@@ -196,6 +236,24 @@ export class FeatureFlagsPage {
     const distinct = new Set(environmentKeys.map((key) => this.canonicalValue(flag.environments[key])));
 
     return distinct.size > 1;
+  }
+
+  /** No selection means unfiltered - a bare tag multiselect with nothing checked shows everything,
+   * not nothing. */
+  private applyTagFilter(flags: readonly FeatureFlag[]): FeatureFlag[] {
+    const selected = this.selectedTags();
+
+    return selected.size === 0 ? [...flags] : flags.filter((flag) => this.matchesTagFilter(flag, selected));
+  }
+
+  /** OR across the selection: a flag with any one selected tag matches, and "No tag" is just
+   * another option in the same OR rather than a separate mode. */
+  private matchesTagFilter(flag: FeatureFlag, selected: ReadonlySet<string>): boolean {
+    if (flag.tags.length === 0) {
+      return selected.has(NO_TAG_KEY);
+    }
+
+    return flag.tags.some((tag) => selected.has(tag));
   }
 
   private canonicalValue(state: FeatureFlagEnvironmentState | undefined): string {
