@@ -34,12 +34,11 @@ Features 1, 3 and 4 are built, 2 in part.
 
 ## Design decisions
 
-- **The frontend talks only to this backend, and this backend is not a reverse proxy.** Avoid
-  calling another Numo service from the browser: a developer machine cannot necessarily reach those
-  services, while DevServices is deployed alongside them inside the network. But the way to do that
-  is a narrow endpoint per need, each reaching a fixed path on a service named by a configuration
-  key - never a pass-through route that forwards an arbitrary path, which would become a hole into
-  the internal network if this app were ever exposed outside it.
+- **Platform-wide rules that apply across more than one feature live in
+  `openspec/specs/platform-conventions/`, not here.** No endpoint is ever a pass-through to an
+  arbitrary path, and a service's own client library is preferred over a hand-rolled `HttpClient` -
+  see that capability for the rule and each feature's own spec for its concrete instance or
+  exception.
 - **Consequence for Swagger UI: "Try it out" reaches the service but the browser blocks the
   response.** Numo specs declare relative servers (`/employee-api`, `/`), which resolve against this
   app's own origin, so the served document gets the service's configured location prepended as the
@@ -48,9 +47,8 @@ Features 1, 3 and 4 are built, 2 in part.
   locally: a CORS-disabling browser extension, which is what we do today and is accepted for a
   developer-only tool, or proxying the service prefix in `proxy.conf.js` so everything is
   same-origin - dev-server-only either way, adding nothing to the deployed app. Making Execute work
-  in the deployed app would need the pass-through route above, which is why it does not work there.
-- **Prefer a service's own client library.** If a service ships one - `Numo.Employee.Client.Lib`
-  and its siblings - consume it instead of hand-rolling an HTTP client against its API.
+  in the deployed app would need a pass-through route, which the no-arbitrary-pass-through rule is
+  exactly why this app does not have.
 - **Keep both ends lean, and drive the UI from data.** The frontend should render generic
   components against the JSON structure the backend returns, rather than growing a bespoke typed
   page per service and per record type. Expect exceptions where a feature genuinely needs its own
