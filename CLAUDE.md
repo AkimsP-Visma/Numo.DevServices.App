@@ -7,6 +7,70 @@ A developer-only tool for browsing data the main Numo UI does not expose. **Read
 (frontend calls this backend only, prefer service client libs, generic data-driven UI), and the
 open questions.
 
+## Working in this repo: spec-driven development is the default
+
+This repo uses [OpenSpec](https://github.com/Fission-AI/OpenSpec). Current, shipped behavior lives
+in `openspec/specs/<capability>/spec.md` - five so far: `api-catalog-browser`,
+`feature-flag-browser`, `service-data-browsing`, `service-health-dashboard`,
+`environment-switching`. `docs/Purpose.md` stays the first read for *why* - narrative, rejected
+alternatives, open questions - while `openspec/specs/` is the current, testable contract; they
+answer different questions and neither replaces the other. Treat spec-driven development as the
+default workflow for **any** code change in this repo - not something you only do when the user
+explicitly asks for `/opsx:propose`, `/opsx:explore`, or names OpenSpec. If the user just says "add
+X" or "fix Y", that is a request to make the change *and* keep the specs true, not a request to
+skip the process.
+
+### The rule
+
+Before changing code that affects user-visible or contractual behavior:
+
+1. **Check `openspec/specs/` first.** Does an existing capability cover the area you're about to
+   touch? Read its spec before writing code, the same way you'd read the code itself.
+2. **Write the change as an OpenSpec change**, not as a direct spec edit:
+   - Use the `openspec-propose` skill (or `/opsx:propose`) to scaffold `proposal.md` + delta
+     `specs/<capability>/spec.md` (+ `design.md` if the change is architecturally non-trivial) +
+     `tasks.md`, *before* or alongside implementing the code - whichever order fits the size of
+     the change, but both must land in the same unit of work.
+   - For a quick fix where a full proposal is overkill, still add or update the relevant delta
+     spec by hand following the same `## ADDED/MODIFIED/REMOVED/RENAMED Requirements` format
+     (`### Requirement: ...` + `#### Scenario: ... WHEN/THEN`) - see any archived change under
+     `openspec/changes/archive/` for the shape.
+3. **After the code change is done and verified**, sync and archive the change
+   (`openspec-sync-specs` then `openspec-archive-change`, or just `openspec-archive-change`, which
+   offers to sync first) so `openspec/specs/` reflects the new reality. A change is not finished
+   until this happens - an open, unsynced change under `openspec/changes/` is exactly the kind of
+   drift this process exists to prevent.
+4. **Validate before calling it done**: `openspec validate --strict <change-name>` for an
+   in-flight change, `openspec validate --specs --strict` after archiving.
+
+### What counts as "affects behavior" (needs a spec update)
+
+- A new or changed browsable resource, filter, relation, page, or endpoint (a new
+  `IServiceDataResource`, a new feature-flags or service-health UI control, a new environment).
+- Changed constraints - what's required, optional, or rejected, and why. This slice's `NumoError`
+  ids (`ServiceDataErrors`, `FeatureFlagsErrors`, `EnvironmentsErrors`, ...) exist precisely so a
+  caller can branch on these, so a change to one is a spec-level change almost by definition.
+- Changed lifecycle/behavior of something already documented: what persists across a restart,
+  what a gated relation fetches and when, what an environment switch invalidates.
+
+### What doesn't need a spec update
+
+- Pure refactors with no observable behavior change (renaming a private method, extracting a
+  helper, reformatting).
+- Comments, logging wording, internal-only variable or file names.
+- Build/tooling changes that don't change what the product does.
+
+When genuinely unsure which bucket a change falls into, default to writing the spec delta - a spec
+that's slightly too detailed costs little; a stale spec silently misleads the next change.
+
+### Never let specs drift
+
+Do not commit a code change that alters documented behavior without also updating the
+corresponding `openspec/specs/**` entry in the same piece of work. If you notice an *existing*
+mismatch between code and a spec while working on something else, call it out and fix the spec
+(or flag it to the user) rather than leaving it - stale specs are worse than no specs, since they
+actively mislead future spec-driven work.
+
 ## Layout
 
 ```
