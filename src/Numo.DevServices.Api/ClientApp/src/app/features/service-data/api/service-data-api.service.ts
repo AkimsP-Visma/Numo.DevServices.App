@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_PATH } from '../../../shared/api/api-paths';
 import { PageRequest, ResourceCatalogue, ResourcePage, ResourceRecord } from './service-data.model';
-import { TenantIdStore } from '../state/tenant-id.store';
+import { TenantIdStore } from '../../../shared/state/tenant-id.store';
 
 /** The platform's own header name, which the client libraries pass on to the services unchanged. */
 const TENANT_ID_HEADER = 'Numo-Tenant-Id';

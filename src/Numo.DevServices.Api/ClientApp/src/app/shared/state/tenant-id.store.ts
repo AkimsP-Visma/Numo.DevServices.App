@@ -1,9 +1,12 @@
 import { computed, Injectable, signal } from '@angular/core';
 
+// Keeps its original service-data name so a value stored before the store was shared still loads.
 const STORAGE_KEY = 'devservices.service-data.tenant-id';
 
 /**
- * The tenant id every service-data request carries. It lives in localStorage so it survives a reload,
+ * The one tenant id the whole app works against: every service-data request carries it, and Key
+ * Mapping sends it as the organization id, which is the same value. It lives in localStorage so it
+ * survives a reload,
  * and every access is guarded because a private window or blocked site data makes the accessor itself
  * throw rather than return null.
  */

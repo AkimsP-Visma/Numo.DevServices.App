@@ -23,6 +23,14 @@
   } @else if (errorMessage()) {
     <p-message severity="error" [text]="errorMessage()!" />
   } @else if (record(); as loaded) {
+    @if (loaded.tools?.length) {
+      <nav class="service-data-record__tools">
+        @for (tool of loaded.tools; track tool.label) {
+          <a [routerLink]="tool.route" [queryParams]="tool.queryParameters">{{ tool.label }}</a>
+        }
+      </nav>
+    }
+
     <app-generic-record-detail [fields]="loaded.fields" />
 
     @for (relation of loaded.relations; track relation.label) {

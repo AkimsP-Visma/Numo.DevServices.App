@@ -108,6 +108,8 @@ src/Numo.DevServices.Api/          the whole backend, one project
                                     (Person and Employee records) and DataIntegration (the
                                     Configuration API's clients, pipelines, connections and more)
   Features/ServiceData/Resources/  one class per browsable resource, nineteen of them
+  Features/KeyMapping/             bulk connector-key <-> numo-key conversion for a DataIntegration
+                                    client resource, over the Configuration API
   Persistence/                     DbContext, design-time factory, migrations
   ClientApp/                       Angular app
 ```

@@ -31,6 +31,7 @@ export class AppLayout {
       route: '/service-data',
       queryParams: { section: 'DataIntegration' },
     },
+    { label: 'Key Mapping', route: '/key-mapping' },
     { label: 'Feature toggles', route: '/feature-flags' },
   ];
 }

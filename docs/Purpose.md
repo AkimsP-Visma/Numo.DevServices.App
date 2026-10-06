@@ -29,8 +29,12 @@ service win over anything else.
    `Features/Environments/`) answers its ping endpoint, refreshed while the page is open. *Built* -
    `Features/ServiceHealth/`
    plus the `/service-health` page.
+5. **Key mapping.** Convert a batch of a DataIntegration client resource's connector keys to
+   numo keys, or the reverse, with client, resource and connector picked rather than typed, and
+   the result shown one row per input row. *Built* - `Features/KeyMapping/` plus the
+   `/key-mapping` page. A client-resource record links to it, prefilled.
 
-Features 1, 3 and 4 are built, 2 in part.
+Features 1, 3, 4 and 5 are built, 2 in part.
 
 ## Design decisions
 
@@ -139,9 +143,9 @@ Features 1, 3 and 4 are built, 2 in part.
   `RestUrl`), never a secret, so it renders as an ordinary auto-loading relation. A dataset's own
   fields have no fixed schema (they are
   whatever the source connector produced), so its detail record renders every field the record
-  carries rather than declaring columns in advance. `connector-key` and `numo-key` are confirmed
-  non-secret identifiers and would be shown as ordinary fields if a later pass adds the extra
-  fan-out call they need.
+  carries rather than declaring columns in advance. `connector-key` and `numo-key` are
+  non-secret identifiers, but they are not record fields: converting needs a connector and an
+  organization id that a record does not carry, so they live on the Key Mapping page instead.
 - **A dataset's own paging is continuation-token based, not page-index**, unlike every other route
   in this slice. `di-execution-step-dataset` fetches one batch and stops rather than pretending to
   support Previous/Next it cannot honour; `ResourcePage.Notice` says so when the service's own token

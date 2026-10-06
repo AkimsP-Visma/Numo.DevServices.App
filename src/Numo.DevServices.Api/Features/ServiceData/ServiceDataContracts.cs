@@ -57,11 +57,17 @@ public sealed record ResourceRow(Guid Id, DateTimeOffset? DeletedAt, IReadOnlyLi
 /// plain string.</summary>
 public sealed record Cell(string? Value, RecordLink? Link);
 
+/// <param name="Tools">Links to other pages of this app that act on the record, so the generic
+/// record page can offer them without knowing which resource it is showing.</param>
 public sealed record ResourceRecord(
     Guid Id,
     string Title,
     IReadOnlyList<FieldValue> Fields,
-    IReadOnlyList<RelationDescriptor> Relations);
+    IReadOnlyList<RelationDescriptor> Relations,
+    IReadOnlyList<ToolLink>? Tools = null);
+
+/// <param name="Route">An app route, such as <c>/key-mapping</c>, not a downstream service path.</param>
+public sealed record ToolLink(string Label, string Route, IReadOnlyDictionary<string, string> QueryParameters);
 
 public sealed record FieldValue(string Label, string? Value, FieldKind Kind, RecordLink? Link);
 
