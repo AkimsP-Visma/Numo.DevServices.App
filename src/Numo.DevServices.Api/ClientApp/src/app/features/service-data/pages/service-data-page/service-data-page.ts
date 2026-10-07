@@ -26,8 +26,8 @@ import {
   GenericRecordTable,
   SortRequest,
 } from '../../components/generic-record-table/generic-record-table';
-import { TenantIdField } from '../../components/tenant-id-field/tenant-id-field';
-import { TenantIdStore } from '../../state/tenant-id.store';
+import { TenantIdField } from '../../../../shared/components/tenant-id-field/tenant-id-field';
+import { TenantIdStore } from '../../../../shared/state/tenant-id.store';
 
 const FIRST_PAGE = 1;
 

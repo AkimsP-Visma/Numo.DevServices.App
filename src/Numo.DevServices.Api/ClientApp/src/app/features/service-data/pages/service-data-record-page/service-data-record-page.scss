@@ -19,6 +19,12 @@
     font-size: 0.85rem;
   }
 
+  &__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
   &__id {
     margin: 0.25rem 0 0;
     color: var(--p-text-muted-color);

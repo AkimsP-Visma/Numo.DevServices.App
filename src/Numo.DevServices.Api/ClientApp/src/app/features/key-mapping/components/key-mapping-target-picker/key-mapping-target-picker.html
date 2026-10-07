@@ -1,0 +1,61 @@
+<div class="key-mapping-target-picker">
+  <div class="key-mapping-target-picker__field">
+    <label for="key-mapping-client">Client</label>
+    <p-select
+      inputId="key-mapping-client"
+      [options]="clients()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Select a client"
+      [filter]="true"
+      [showClear]="true"
+      [ngModel]="clientId()"
+      (ngModelChange)="onClientSelected($event)"
+    />
+  </div>
+
+  <div class="key-mapping-target-picker__field">
+    <label for="key-mapping-resource">Resource</label>
+    <p-select
+      inputId="key-mapping-resource"
+      [options]="resources()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Select a resource"
+      [filter]="true"
+      [showClear]="true"
+      [disabled]="!clientId()"
+      [ngModel]="resourceId()"
+      (ngModelChange)="onResourceSelected($event)"
+    />
+  </div>
+
+  <div class="key-mapping-target-picker__field">
+    <label for="key-mapping-connector">Connector</label>
+    <p-select
+      inputId="key-mapping-connector"
+      [options]="connectorOptions()"
+      optionLabel="label"
+      optionValue="name"
+      optionDisabled="isDisabled"
+      placeholder="Select a connector"
+      [disabled]="!resourceId()"
+      [ngModel]="connectorName()"
+      (ngModelChange)="onConnectorSelected($event)"
+    />
+  </div>
+</div>
+
+@if (keyFieldsLabel(); as keyFields) {
+  <p class="key-mapping-target-picker__hint">Key fields: {{ keyFields }}</p>
+}
+
+@if (connectors()?.length === 0) {
+  <p class="key-mapping-target-picker__hint">
+    This resource has no connectors, so it has no keys to convert.
+  </p>
+}
+
+@if (errorMessage(); as message) {
+  <p-message severity="error" [text]="message" />
+}

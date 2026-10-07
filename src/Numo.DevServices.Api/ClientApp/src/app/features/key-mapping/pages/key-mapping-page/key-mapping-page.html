@@ -1,0 +1,77 @@
+<section class="key-mapping-page">
+  <header class="key-mapping-page__header">
+    <div>
+      <h1 class="key-mapping-page__title">Key Mapping</h1>
+      <p class="key-mapping-page__subtitle">
+        Convert a client resource's connector keys to numo keys and back, using the resource's last
+        loaded dataset for the tenant (its organization). Read-only: nothing is created or changed.
+      </p>
+    </div>
+
+    <app-tenant-id-field />
+  </header>
+
+  <app-key-mapping-target-picker (pickChange)="onPickChange($event)" />
+
+  @if (selection()) {
+    <p-selectbutton
+      [options]="directionOptions"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      [ngModel]="direction()"
+      (ngModelChange)="direction.set($event)"
+    />
+
+    <div class="key-mapping-page__input">
+      <label for="key-mapping-keys">{{ inputLabel() }}</label>
+      <textarea
+        pTextarea
+        id="key-mapping-keys"
+        rows="10"
+        spellcheck="false"
+        class="key-mapping-page__textarea"
+        [ngModel]="inputText()"
+        (ngModelChange)="onInputChanged($event)"
+      ></textarea>
+
+      @if (parsedInput().invalidLineNumbers.length) {
+        <span class="key-mapping-page__warning">
+          @if (direction() === 'toNumoKeys') {
+            Wrong number of values on line
+          } @else {
+            Not a GUID on line
+          }
+          {{ parsedInput().invalidLineNumbers.join(', ') }} (blank lines not counted).
+        </span>
+      }
+    </div>
+
+    <div class="key-mapping-page__actions">
+      <p-button
+        label="Convert"
+        [disabled]="!canConvert()"
+        [loading]="isConverting()"
+        (onClick)="convert()"
+      />
+      <span class="key-mapping-page__count">
+        {{ parsedInput().keys.length }} of at most {{ maxBatchSize }} keys
+      </span>
+    </div>
+  } @else if (!hasPick()) {
+    <p-message severity="info" text="Pick a client, resource and connector." />
+  } @else {
+    <p-message
+      severity="info"
+      text="Enter a tenant id in GUID form: it is the organization the conversion runs against."
+    />
+  }
+
+  @if (errorMessage(); as message) {
+    <p-message severity="error" [text]="message" />
+  }
+
+  @if (result(); as converted) {
+    <app-key-mapping-result-table [result]="converted" [direction]="resultDirection()" />
+  }
+</section>

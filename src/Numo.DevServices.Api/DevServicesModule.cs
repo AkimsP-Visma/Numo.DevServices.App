@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Numo.Common.Lib.Extensions;
 using Numo.DevServices.Api.Features.Environments;
 using Numo.DevServices.Api.Features.FeatureFlags;
+using Numo.DevServices.Api.Features.KeyMapping;
 using Numo.DevServices.Api.Features.ServiceHealth;
 using Numo.DevServices.Api.Features.ServiceData;
 using Numo.DevServices.Api.Features.Services;
@@ -26,5 +27,6 @@ public sealed class DevServicesModule : IBusinessModule
         services.AddServiceHealthFeature();
         services.AddFeatureFlagsFeature();
         services.AddServiceDataFeature();
+        services.AddKeyMappingFeature();
     }
 }

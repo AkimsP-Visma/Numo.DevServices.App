@@ -19,8 +19,8 @@ import { ResourceDescriptor, ResourceRecord } from '../../api/service-data.model
 import { ServiceDataApiService } from '../../api/service-data-api.service';
 import { GenericRecordDetail } from '../../components/generic-record-detail/generic-record-detail';
 import { RelatedRecordsPanel } from '../../components/related-records-panel/related-records-panel';
-import { TenantIdField } from '../../components/tenant-id-field/tenant-id-field';
-import { TenantIdStore } from '../../state/tenant-id.store';
+import { TenantIdField } from '../../../../shared/components/tenant-id-field/tenant-id-field';
+import { TenantIdStore } from '../../../../shared/state/tenant-id.store';
 
 @Component({
   selector: 'app-service-data-record-page',

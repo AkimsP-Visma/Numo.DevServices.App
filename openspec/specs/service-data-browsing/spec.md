@@ -8,7 +8,9 @@ its columns, filters and relations once in C#; the frontend renders grids, detai
 relation previews from that data alone, adding per-resource frontend code only where a feature
 genuinely needs its own shape. Sensitive resources (connection credentials/certificates, an
 execution step's real dataset) are reachable only on demand via a relation button, never listed.
+
 ## Requirements
+
 ### Requirement: Descriptor-driven resource catalogue
 The system SHALL expose a compile-time catalogue of browsable resources, each implementing
 `IServiceDataResource` and declaring a `ResourceDescriptor` (key, label, service name, section,
@@ -344,3 +346,17 @@ this slice's own instance of the platform-wide no-pass-through rule recorded in
 - **WHEN** a request names a resource key with no matching registered `IServiceDataResource`
 - **THEN** no downstream HTTP call is made at all; the handler fails with `UnknownResource`
 
+### Requirement: Records can carry links to other tools
+A `ResourceRecord` SHALL be able to carry an optional list of tool links. Each link has a label,
+an app route and query parameters. The record page SHALL render them generically, without knowing
+which resource produced them. This is what lets a record hand its ids to a page outside service
+data browsing without a resource-specific branch in the frontend. `di-client-resources` SHALL
+carry one "Convert keys" link to the Key Mapping page, with its `clientId` and `resourceId`.
+
+#### Scenario: Client resource opens Key Mapping prefilled
+- **WHEN** the user opens a `di-client-resources` record and follows "Convert keys"
+- **THEN** the Key Mapping page opens with that client and resource selected
+
+#### Scenario: A record without tool links
+- **WHEN** a resource produces a record with no tool links
+- **THEN** the record page renders no tool-link area at all

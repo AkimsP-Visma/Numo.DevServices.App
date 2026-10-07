@@ -1,0 +1,43 @@
+<div class="key-mapping-result-table__toolbar">
+  <span>{{ mappedCount() }} of {{ lines().length }} mapped</span>
+  <p-button label="Copy as TSV" severity="secondary" (onClick)="copyAsTsv()" />
+
+  @if (copyStatus(); as status) {
+    <span class="key-mapping-result-table__status">{{ status }}</span>
+  }
+</div>
+
+@if (result().notice; as notice) {
+  <p-message severity="warn" [text]="notice" />
+}
+
+<table class="key-mapping-result-table__table">
+  <thead>
+    <tr>
+      <th class="key-mapping-result-table__number">#</th>
+      @for (header of headers(); track $index; let columnIndex = $index) {
+        <th [class.key-mapping-result-table__output]="columnIndex >= firstOutputColumn()">
+          {{ header }}
+        </th>
+      }
+    </tr>
+  </thead>
+
+  <tbody>
+    @for (line of lines(); track $index; let rowIndex = $index) {
+      <tr [class.key-mapping-result-table__row--missing]="!line.isMapped">
+        <td class="key-mapping-result-table__number">{{ rowIndex + 1 }}</td>
+
+        @for (cell of line.cells; track $index; let columnIndex = $index) {
+          <td [class.key-mapping-result-table__output]="columnIndex >= firstOutputColumn()">
+            @if (cell === null) {
+              <p-tag value="Not found" severity="warn" />
+            } @else {
+              {{ cell }}
+            }
+          </td>
+        }
+      </tr>
+    }
+  </tbody>
+</table>

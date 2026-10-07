@@ -5,17 +5,17 @@ namespace Numo.DevServices.Api.Features.ServiceData.Resources;
 /// following the "Resources" relation from a <see cref="ClientsResource"/> record: the required
 /// <c>clientId</c> filter is what a plain browse-everything picker cannot supply.
 ///
-/// The connector-key and numo-key routes are deliberately not surfaced as extra fields here even
-/// though they are confirmed non-secret identifiers: both take connectorName/organizationId/a peer
-/// key as query parameters that a bare <see cref="ClientResource"/> row does not carry (they come
-/// from <c>/api/clients/{clientId}/resources/{resourceId}/connectors</c>, one call deeper), so
-/// showing them needs a second fan-out this pass does not include. A documented gap, not a bug.
+/// Its connector-key and numo-key conversions need a connector and an organization id that a
+/// record does not carry, so a record links to the Key Mapping page instead of showing them.
 /// </summary>
 public sealed class ClientResourcesResource(DataIntegrationConfigurationApi api) : IServiceDataResource
 {
     private const string ResourceKey = "di-client-resources";
     private const string ClientsResourceKey = "di-clients";
     private const string ClientIdFilterKey = "clientId";
+    private const string KeyMappingRoute = "/key-mapping";
+    private const string KeyMappingClientIdParameter = "clientId";
+    private const string KeyMappingResourceIdParameter = "resourceId";
 
     public ResourceDescriptor Descriptor { get; } = new(
         ResourceKey,
@@ -90,7 +90,17 @@ public sealed class ClientResourcesResource(DataIntegrationConfigurationApi api)
                     FieldKind.Guid,
                     new RecordLink(ClientsResourceKey, resource.ClientId)),
             ],
-            []);
+            [],
+            [
+                new ToolLink(
+                    "Convert keys",
+                    KeyMappingRoute,
+                    new Dictionary<string, string>
+                    {
+                        [KeyMappingClientIdParameter] = resource.ClientId.ToString(),
+                        [KeyMappingResourceIdParameter] = resource.Id.ToString(),
+                    }),
+            ]);
 }
 
 internal sealed record ClientResource(Guid Id, Guid ClientId, string? Name);

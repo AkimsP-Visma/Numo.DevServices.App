@@ -84,6 +84,15 @@ export interface ResourceRecord {
   readonly title: string;
   readonly fields: readonly FieldValue[];
   readonly relations: readonly RelationDescriptor[];
+  /** Absent or null for every resource that offers no tool. */
+  readonly tools?: readonly ToolLink[] | null;
+}
+
+/** A link to another page of this app that acts on the record, e.g. Key Mapping. */
+export interface ToolLink {
+  readonly label: string;
+  readonly route: string;
+  readonly queryParameters: Readonly<Record<string, string>>;
 }
 
 export interface ResourceCatalogue {
