@@ -28,15 +28,9 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-              {
-                "glob": "**/*",
-                "input": "node_modules/@vismaux/vud/dist/img",
-                "output": "/assets/vud/img/"
               }
             ],
             "styles": [
-              "node_modules/@vismaux/vud/dist/css/vud.min.css",
               "node_modules/primeicons/primeicons.css",
               "src/styles.scss",
               {

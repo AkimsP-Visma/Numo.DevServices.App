@@ -10,21 +10,23 @@
   --win98-success-color: #0a7d0a;
   --win98-warn-color: #c77f00;
   --win98-danger-color: #b22222;
+  /* The desktop strip around the "window"; app-layout subtracts it from 100vh so a page that fits never scrolls. */
+  --desktop-margin: 8px;
+  --desktop-margin-top: 32px;
 }
 
 body {
+  margin: var(--desktop-margin);
+  margin-top: var(--desktop-margin-top);
   font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
   font-size: 11px;
 }
 
 /*
- * @vismaux/vud (the design-system stylesheet loaded globally in angular.json)
- * ships a bare `body { padding-top: 10.5rem }` rule meant for a different app
- * shell with a fixed top nav; this app has none, so it just leaves 105px of
- * body background exposed above the title bar. Rather than fight that rule,
- * this gives the exposed strip a Windows-98-desktop dither pattern instead of
- * plain white - two close teal tones, not theme tokens, since this is desktop
- * wallpaper behind the "window", not a themed component surface.
+ * Whatever body background shows around the layout gets a Windows-98-desktop
+ * dither pattern instead of plain white - two close teal tones, not theme
+ * tokens, since this is desktop wallpaper behind the "window", not a themed
+ * component surface.
  */
 body {
   background-color: #017a7a;

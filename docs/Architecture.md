@@ -77,8 +77,8 @@ The host also uses the real numo-core builder rather than the reference's
 
 Angular 21 standalone application in `ClientApp`, served under the base href
 `/app/dev-services/`. Routes lazy-load one feature each. The sample page holds its state in
-signals and talks to a feature-local API service; PrimeNG supplies the components and
-`@vismaux/vud` the Visma styling.
+signals and talks to a feature-local API service; PrimeNG supplies the components and their
+styling.
 
 In development `ng serve` proxies `/app/dev-services/api/*` to the API host and strips the
 prefix. The API host does not serve the SPA - neither does the reference host - so production
